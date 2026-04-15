@@ -4,6 +4,10 @@ import { PrismaClient, ResortStatus, UserRole } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.favorite.deleteMany();
   await prisma.moderationReview.deleteMany();
   await prisma.lead.deleteMany();
   await prisma.resortPrice.deleteMany();
@@ -15,6 +19,7 @@ async function main() {
 
   const ownerPasswordHash = await bcrypt.hash("owner123", 10);
   const adminPasswordHash = await bcrypt.hash("admin123", 10);
+  const userPasswordHash = await bcrypt.hash("user12345", 10);
 
   const owner = await prisma.user.create({
     data: {
@@ -41,6 +46,15 @@ async function main() {
       name: "Alakol Admin",
       passwordHash: adminPasswordHash,
       role: UserRole.ADMIN
+    }
+  });
+
+  await prisma.user.create({
+    data: {
+      email: "user@alakol.kz",
+      name: "Аружан",
+      passwordHash: userPasswordHash,
+      role: UserRole.USER
     }
   });
 

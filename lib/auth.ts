@@ -37,7 +37,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as { role?: "OWNER" | "ADMIN" }).role;
+        token.role = (user as { role?: "OWNER" | "ADMIN" | "USER" }).role;
         token.ownerProfileId = (user as { ownerProfileId?: string | null }).ownerProfileId;
       }
       return token;
@@ -45,7 +45,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? "";
-        session.user.role = (token.role as "OWNER" | "ADMIN" | undefined) ?? "OWNER";
+        session.user.role = (token.role as "OWNER" | "ADMIN" | "USER" | undefined) ?? "USER";
         session.user.ownerProfileId = (token.ownerProfileId as string | null | undefined) ?? null;
       }
       return session;

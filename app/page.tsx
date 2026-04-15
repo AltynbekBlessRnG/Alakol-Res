@@ -154,23 +154,33 @@ export default async function HomePage() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {popularResorts.map((resort) => (
-            <Link key={resort.id} href={`/catalog/${resort.slug}`} className="overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+            <Link
+              key={resort.id}
+              href={`/catalog/${resort.slug}`}
+              className="group relative overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_70px_rgba(14,26,31,0.08)] transition duration-500 hover:-translate-y-2 hover:shadow-[0_30px_100px_rgba(14,26,31,0.15)]"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,155,53,0.12),transparent_38%)] opacity-0 transition duration-500 group-hover:opacity-100" />
               {resort.images[0] && (
                 <div className="relative h-72">
-                  <Image src={resort.images[0].url} alt={resort.images[0].alt} fill className="object-cover" />
+                  <Image
+                    src={resort.images[0].url}
+                    alt={resort.images[0].alt}
+                    fill
+                    className="object-cover transition duration-700 group-hover:scale-110 group-hover:-rotate-[0.6deg]"
+                  />
                   {resort.approvedReviewsCount > 0 && (
-                    <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-black/62 px-3 py-2 text-sm font-medium text-white backdrop-blur-sm">
+                    <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-black/62 px-3 py-2 text-sm font-medium text-white backdrop-blur-sm transition duration-300 group-hover:-translate-y-1 group-hover:bg-black/72">
                       <Star size={15} className="fill-[#f2c45b] text-[#f2c45b]" />
                       <span>{resort.ratingAverage}/5</span>
                     </div>
                   )}
                 </div>
               )}
-              <div className="p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-black/45">{resort.zone}</p>
-                <h3 className="mt-2 font-display text-3xl">{resort.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-black/65">{resort.shortDescription}</p>
-                <div className="mt-5 flex items-center justify-between gap-4">
+              <div className="relative p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-black/45 transition duration-300 group-hover:text-black/65">{resort.zone}</p>
+                <h3 className="mt-2 font-display text-3xl transition duration-300 group-hover:translate-x-1">{resort.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-black/65 transition duration-300 group-hover:text-black/78">{resort.shortDescription}</p>
+                <div className="mt-5 flex items-center justify-between gap-4 transition duration-300 group-hover:translate-y-1">
                   <p className="text-sm font-medium text-pine">от {formatPrice(resort.minPrice)} ₸ / сутки</p>
                   {resort.approvedReviewsCount > 0 && (
                     <p className="text-sm text-black/48">{resort.approvedReviewsCount} отзывов</p>

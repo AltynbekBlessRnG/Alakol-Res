@@ -3,13 +3,15 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
   OWNER
   ADMIN
+  USER
 }
 
 enum ResortStatus {
@@ -19,17 +21,26 @@ enum ResortStatus {
   REJECTED
 }
 
+enum ReviewStatus {
+  pending
+  approved
+}
+
 model User {
-  id             String              @id @default(cuid())
-  email          String              @unique
-  name           String
-  passwordHash   String
-  role           UserRole
-  ownerProfile   ResortOwnerProfile?
-  leads          Lead[]              @relation("LeadHandledBy")
-  moderationLogs ModerationReview[]  @relation("ReviewAdmin")
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  name                String
+  passwordHash        String
+  role                UserRole
+  ownerProfile        ResortOwnerProfile?
+  leads               Lead[]               @relation("LeadHandledBy")
+  moderationLogs      ModerationReview[]   @relation("ReviewAdmin")
+  favorites           Favorite[]
+  reviews             Review[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model ResortOwnerProfile {
@@ -68,6 +79,10 @@ model Resort {
   hasWifi           Boolean            @default(true)
   hasParking        Boolean            @default(true)
   hasKidsZone       Boolean            @default(false)
+  includedText      String             @default("")
+  rulesText         String             @default("")
+  beachLine         String             @default("")
+  transferInfo      String             @default("")
   isFeatured        Boolean            @default(false)
   status            ResortStatus       @default(DRAFT)
   ownerProfile      ResortOwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
@@ -75,9 +90,13 @@ model Resort {
   amenities         ResortAmenity[]
   prices            ResortPrice[]
   leads             Lead[]
+  reviews           Review[]
+  favorites         Favorite[]
   moderationReviews ModerationReview[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+
+  @@index([status, zone, isFeatured])
 }
 
 model ResortImage {
@@ -86,6 +105,7 @@ model ResortImage {
   url       String
   alt       String
   sortOrder Int      @default(0)
+  kind      String   @default("gallery")
   resort    Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
 }
 
@@ -106,25 +126,78 @@ model ResortPrice {
 }
 
 model Lead {
-  id          String   @id @default(cuid())
-  resortId    String
-  handledById String?
-  guestName   String
-  phone       String
-  note        String?
-  status      String   @default("new")
-  createdAt   DateTime @default(now())
-  resort      Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
-  handledBy   User?    @relation("LeadHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
+  id           String   @id @default(cuid())
+  resortId     String
+  handledById  String?
+  guestName    String
+  phone        String
+  note         String?
+  source       String   @default("site_form")
+  status       String   @default("new")
+  ownerComment String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  resort       Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
+  handledBy    User?    @relation("LeadHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  resortId   String
+  userId     String?
+  authorName String
+  rating     Int
+  body       String
+  status     ReviewStatus @default(pending)
+  createdAt  DateTime     @default(now())
+  resort     Resort       @relation(fields: [resortId], references: [id], onDelete: Cascade)
+  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([resortId, status])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  resortId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resort    Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resortId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ModerationReview {
-  id         String   @id @default(cuid())
-  resortId   String
-  adminId    String?
-  action     String
-  comment    String?
-  createdAt  DateTime @default(now())
-  resort     Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
-  admin      User?    @relation("ReviewAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  id        String   @id @default(cuid())
+  resortId  String
+  adminId   String?
+  action    String
+  comment   String?
+  createdAt DateTime @default(now())
+  resort    Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
+  admin     User?    @relation("ReviewAdmin", fields: [adminId], references: [id], onDelete: SetNull)
 }

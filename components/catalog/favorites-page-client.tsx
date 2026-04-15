@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import { Heart, PhoneCall, Trash2 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
@@ -22,11 +23,15 @@ type FavoriteResort = {
 };
 
 export function FavoritesPageClient() {
+  const { data: session, status } = useSession();
   const [items, setItems] = useState<PublicStoredItem[]>([]);
   const [resorts, setResorts] = useState<FavoriteResort[]>([]);
   const [loading, setLoading] = useState(true);
+  const isUser = session?.user.role === "USER";
 
   useEffect(() => {
+    if (isUser || status === "loading") return;
+
     setItems(readPublicList("favorites"));
 
     const sync = () => setItems(readPublicList("favorites"));
@@ -36,10 +41,42 @@ export function FavoritesPageClient() {
       window.removeEventListener("alakol-public-list-updated", sync as EventListener);
       window.removeEventListener("storage", sync);
     };
-  }, []);
+  }, [isUser, status]);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (status === "loading") return;
+
+    if (isUser) {
+      async function loadUserFavorites() {
+        setLoading(true);
+        const response = await fetch("/api/favorites", { cache: "no-store" });
+        if (!response.ok) {
+          if (!cancelled) {
+            setResorts([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const payload = (await response.json()) as { favorites: FavoriteResort[] };
+        if (!cancelled) {
+          setResorts(payload.favorites || []);
+          setItems((payload.favorites || []).map((item) => ({ slug: item.slug, title: item.title })));
+          setLoading(false);
+        }
+      }
+
+      loadUserFavorites();
+
+      const sync = () => void loadUserFavorites();
+      window.addEventListener("alakol-public-list-updated", sync as EventListener);
+      return () => {
+        cancelled = true;
+        window.removeEventListener("alakol-public-list-updated", sync as EventListener);
+      };
+    }
 
     if (!items.length) {
       setResorts([]);
@@ -68,7 +105,7 @@ export function FavoritesPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [items]);
+  }, [isUser, items, status]);
 
   const orderedResorts = useMemo(() => {
     return items
@@ -76,7 +113,22 @@ export function FavoritesPageClient() {
       .filter(Boolean) as FavoriteResort[];
   }, [items, resorts]);
 
-  function remove(slug: string) {
+  async function remove(slug: string) {
+    if (isUser) {
+      const response = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug })
+      });
+
+      if (!response.ok) return;
+
+      setResorts((current) => current.filter((resort) => resort.slug !== slug));
+      setItems((current) => current.filter((item) => item.slug !== slug));
+      window.dispatchEvent(new Event("alakol-public-list-updated"));
+      return;
+    }
+
     const nextItems = items.filter((item) => item.slug !== slug);
     setItems(nextItems);
     setResorts((current) => current.filter((resort) => resort.slug !== slug));
@@ -100,6 +152,11 @@ export function FavoritesPageClient() {
         <p className="mt-4 text-sm leading-7 text-black/60">
           Когда зона отдыха кажется интересной, не обязательно сразу принимать решение. Добавьте её в избранное и спокойно вернитесь к сравнению позже.
         </p>
+        {!session?.user && (
+          <Link href="/login?callbackUrl=%2Ffavorites" className="mt-4 inline-flex rounded-full border border-black/10 px-5 py-3 text-sm font-medium text-ink">
+            Войти, чтобы синхронизировать избранное
+          </Link>
+        )}
         <Link href="/catalog" className="mt-6 inline-flex rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">
           Перейти в каталог
         </Link>

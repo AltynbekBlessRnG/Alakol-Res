@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { appendResortImages, getResortById } from "@/lib/demo-data";
 import { authOptions } from "@/lib/auth";
+import { uploadResortImagesToSupabaseStorage } from "@/lib/supabase/storage";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -25,18 +26,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "No files" }, { status: 400 });
   }
 
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "resorts", resortId);
-  await fs.mkdir(uploadDir, { recursive: true });
+  let uploadedUrls = await uploadResortImagesToSupabaseStorage(resortId, files);
 
-  const uploadedUrls: string[] = [];
+  if (!uploadedUrls) {
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "resorts", resortId);
+    await fs.mkdir(uploadDir, { recursive: true });
 
-  for (const file of files) {
-    const extension = path.extname(file.name) || ".jpg";
-    const fileName = `${randomUUID()}${extension}`;
-    const filePath = path.join(uploadDir, fileName);
-    const bytes = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(filePath, bytes);
-    uploadedUrls.push(`/uploads/resorts/${resortId}/${fileName}`);
+    uploadedUrls = [];
+
+    for (const file of files) {
+      const extension = path.extname(file.name) || ".jpg";
+      const fileName = `${randomUUID()}${extension}`;
+      const filePath = path.join(uploadDir, fileName);
+      const bytes = Buffer.from(await file.arrayBuffer());
+      await fs.writeFile(filePath, bytes);
+      uploadedUrls.push(`/uploads/resorts/${resortId}/${fileName}`);
+    }
   }
 
   appendResortImages(resortId, uploadedUrls);

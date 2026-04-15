@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import fs from "node:fs";
 import path from "node:path";
 
-export type UserRole = "OWNER" | "ADMIN";
+export type UserRole = "OWNER" | "ADMIN" | "USER";
 export type ResortStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED";
 export type LeadStatus = "new" | "contacted" | "no_answer" | "booked" | "closed";
 export type NotificationType = "lead_created" | "resort_submitted" | "resort_published" | "resort_rejected" | "password_reset";
@@ -123,10 +123,18 @@ export type ModerationReview = {
 export type Review = {
   id: string;
   resortId: string;
+  userId?: string | null;
   authorName: string;
   rating: number;
   body: string;
   status: "pending" | "approved";
+  createdAt: Date;
+};
+
+export type Favorite = {
+  id: string;
+  userId: string;
+  resortId: string;
   createdAt: Date;
 };
 
@@ -175,6 +183,10 @@ export type AuditItem = ModerationReview & {
 
 export type OwnerLead = Lead & {
   resort: { id: string; title: string; ownerProfileId: string };
+};
+
+export type UserReviewItem = Review & {
+  resort: { id: string; title: string; slug: string };
 };
 
 type DbRow = Record<string, string | number | null>;
@@ -327,10 +339,20 @@ function rowToPublicReview(row: DbRow): Review {
   return {
     id: String(row.id),
     resortId: String(row.resortId),
+    userId: row.userId ? String(row.userId) : null,
     authorName: String(row.authorName),
     rating: Number(row.rating),
     body: String(row.body),
     status: String(row.status) as "pending" | "approved",
+    createdAt: parseDate(row.createdAt)
+  };
+}
+
+function rowToFavorite(row: DbRow): Favorite {
+  return {
+    id: String(row.id),
+    userId: String(row.userId),
+    resortId: String(row.resortId),
     createdAt: parseDate(row.createdAt)
   };
 }
@@ -473,10 +495,18 @@ function initializeDatabase(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS reviews (
       id TEXT PRIMARY KEY,
       resortId TEXT NOT NULL,
+      userId TEXT,
       authorName TEXT NOT NULL,
       rating INTEGER NOT NULL,
       body TEXT NOT NULL,
       status TEXT NOT NULL,
+      createdAt TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS favorites (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      resortId TEXT NOT NULL,
       createdAt TEXT NOT NULL
     );
 
@@ -521,6 +551,7 @@ function initializeDatabase(db: Database.Database) {
   ensureColumn(db, "leads", "ownerComment", "TEXT");
   ensureColumn(db, "leads", "source", "TEXT DEFAULT 'site_form'");
   ensureColumn(db, "leads", "updatedAt", "TEXT");
+  ensureColumn(db, "reviews", "userId", "TEXT");
 
   const hasUsers = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
   if (hasUsers.count === 0) {
@@ -543,6 +574,8 @@ function seedDatabase(db: Database.Database) {
     .run(ownerId, "owner@alakol.kz", "Sunrise Travel", bcrypt.hashSync("owner123", 10), "OWNER", ownerProfileId, now);
   db.prepare("INSERT INTO users (id, email, name, passwordHash, role, ownerProfileId, emailVerifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
     .run("user-admin-1", "admin@alakol.kz", "Alakol Admin", bcrypt.hashSync("admin123", 10), "ADMIN", null, now);
+  db.prepare("INSERT INTO users (id, email, name, passwordHash, role, ownerProfileId, emailVerifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    .run("user-consumer-1", "user@alakol.kz", "Аружан", bcrypt.hashSync("user12345", 10), "USER", null, now);
   db.prepare("INSERT INTO owner_profiles (id, userId, company, phone, whatsapp) VALUES (?, ?, ?, ?, ?)")
     .run(ownerProfileId, ownerId, "Sunrise Travel", "+7 777 100 20 30", "7771002030");
 
@@ -1155,10 +1188,10 @@ export function addModerationReview(input: { resortId: string; adminId?: string;
     .run(createId("review"), input.resortId, input.adminId ?? null, input.action, input.comment ?? null, new Date().toISOString());
 }
 
-export function createReview(input: { resortId: string; authorName: string; rating: number; body: string }) {
+export function createReview(input: { resortId: string; userId?: string | null; authorName: string; rating: number; body: string }) {
   getDb()
-    .prepare("INSERT INTO reviews (id, resortId, authorName, rating, body, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
-    .run(createId("review"), input.resortId, input.authorName, input.rating, input.body, "pending", new Date().toISOString());
+    .prepare("INSERT INTO reviews (id, resortId, userId, authorName, rating, body, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    .run(createId("review"), input.resortId, input.userId ?? null, input.authorName, input.rating, input.body, "pending", new Date().toISOString());
 }
 
 export function listPendingReviews() {
@@ -1225,6 +1258,58 @@ export function createDraftResort(ownerProfileId: string) {
     );
 
   return id;
+}
+
+export function listFavoritesByUserId(userId: string) {
+  return getDb()
+    .prepare("SELECT * FROM favorites WHERE userId = ? ORDER BY datetime(createdAt) DESC")
+    .all(userId)
+    .map((row) => rowToFavorite(row as DbRow));
+}
+
+export function isFavoriteForUser(userId: string, resortId: string) {
+  const row = getDb().prepare("SELECT id FROM favorites WHERE userId = ? AND resortId = ?").get(userId, resortId);
+  return Boolean(row);
+}
+
+export function toggleFavoriteForUser(userId: string, resortId: string) {
+  const existing = getDb().prepare("SELECT id FROM favorites WHERE userId = ? AND resortId = ?").get(userId, resortId) as DbRow | undefined;
+  if (existing?.id) {
+    getDb().prepare("DELETE FROM favorites WHERE id = ?").run(String(existing.id));
+    return false;
+  }
+
+  getDb()
+    .prepare("INSERT INTO favorites (id, userId, resortId, createdAt) VALUES (?, ?, ?, ?)")
+    .run(createId("favorite"), userId, resortId, new Date().toISOString());
+
+  return true;
+}
+
+export function listUserFavoriteResorts(userId: string) {
+  return listFavoritesByUserId(userId)
+    .map((favorite) => getResortById(favorite.resortId))
+    .filter(Boolean)
+    .map((resort) => enrichResort(resort!));
+}
+
+export function listUserReviews(userId: string): UserReviewItem[] {
+  const rows = getDb().prepare(`
+    SELECT reviews.*, resorts.title as resortTitle, resorts.slug as resortSlug
+    FROM reviews
+    JOIN resorts ON resorts.id = reviews.resortId
+    WHERE reviews.userId = ?
+    ORDER BY datetime(reviews.createdAt) DESC
+  `).all(userId) as Array<DbRow & { resortTitle: string; resortSlug: string }>;
+
+  return rows.map((row) => ({
+    ...rowToPublicReview(row),
+    resort: {
+      id: String(row.resortId),
+      title: String(row.resortTitle),
+      slug: String(row.resortSlug)
+    }
+  }));
 }
 
 export function listAllResortsForFilters() {

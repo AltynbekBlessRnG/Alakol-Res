@@ -8,10 +8,16 @@ export async function requireUser() {
   return session;
 }
 
-export async function requireRole(role: "OWNER" | "ADMIN") {
+function getRoleHome(role: "OWNER" | "ADMIN" | "USER") {
+  if (role === "ADMIN") return "/admin";
+  if (role === "OWNER") return "/owner";
+  return "/account";
+}
+
+export async function requireRole(role: "OWNER" | "ADMIN" | "USER") {
   const session = await requireUser();
   if (session.user.role !== role) {
-    redirect(role === "ADMIN" ? "/owner" : "/admin");
+    redirect(getRoleHome(session.user.role));
   }
   return session;
 }

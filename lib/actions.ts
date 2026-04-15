@@ -223,12 +223,14 @@ export async function toggleFeaturedAction(formData: FormData) {
 }
 
 export async function createReviewAction(formData: FormData) {
+  const session = await requireRole("USER");
   const resortId = String(formData.get("resortId") || "");
-  const authorName = String(formData.get("authorName") || "");
+  const returnTo = String(formData.get("returnTo") || "/favorites");
   const body = String(formData.get("body") || "");
   const rating = Number(formData.get("rating") || 0);
-  if (!resortId || !authorName || !body || rating < 1 || rating > 5) return;
-  createReview({ resortId, authorName, body, rating });
+  const authorName = session.user.name?.trim() || "Гость";
+  if (!resortId || !body || rating < 1 || rating > 5) return;
+  createReview({ resortId, authorName, body, rating, userId: session.user.id });
   const admin = getUserById("user-admin-1");
   if (admin) {
     createNotification({
@@ -239,7 +241,7 @@ export async function createReviewAction(formData: FormData) {
       href: "/admin"
     });
   }
-  redirect(`/catalog?review=success`);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}review=success#reviews`);
 }
 
 export async function moderateReviewAction(formData: FormData) {

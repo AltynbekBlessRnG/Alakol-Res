@@ -1,23 +1,43 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { readPublicList } from "@/lib/public-lists";
 
 export function FavoritesLink({ mobile = false }: { mobile?: boolean }) {
+  const { data: session, status } = useSession();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const sync = () => setCount(readPublicList("favorites").length);
+    let cancelled = false;
+
+    const sync = async () => {
+      if (status === "loading") return;
+
+      if (session?.user.role === "USER") {
+        const response = await fetch("/api/favorites", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { count: number };
+        if (!cancelled) {
+          setCount(payload.count);
+        }
+        return;
+      }
+
+      setCount(readPublicList("favorites").length);
+    };
+
     sync();
     window.addEventListener("alakol-public-list-updated", sync as EventListener);
     window.addEventListener("storage", sync);
     return () => {
+      cancelled = true;
       window.removeEventListener("alakol-public-list-updated", sync as EventListener);
       window.removeEventListener("storage", sync);
     };
-  }, []);
+  }, [session?.user.role, status]);
 
   if (!count) return null;
 

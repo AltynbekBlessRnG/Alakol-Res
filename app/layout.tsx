@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "@/app/providers";
 import { CompareBar } from "@/components/catalog/compare-bar";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { getMetadataBase, siteDescription, siteKeywords, siteName } from "@/lib/seo";
 import "./globals.css";
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <Providers>
           <SiteHeader />
           {children}
+          <SiteFooter />
           <CompareBar />
         </Providers>
       </body>

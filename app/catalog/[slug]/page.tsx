@@ -187,7 +187,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
         </div>
       </section>
 
-      <section className="mx-auto -mt-10 max-w-7xl px-5 md:px-8">
+      <section className="mx-auto -mt-2 pt-6 max-w-7xl px-5 md:pt-8 md:px-8">
         <div className="grid gap-4 rounded-[2rem] bg-white p-5 shadow-[0_20px_80px_rgba(19,32,40,0.10)] md:grid-cols-2 xl:grid-cols-4">
           {spotlightCards.map((item) => (
             <div key={item.title} className="rounded-[1.5rem] bg-[#f7f1e6] p-4">
@@ -198,51 +198,6 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
               <p className="mt-3 text-sm leading-6 text-black/65">{item.text}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="px-5 py-8 md:px-8">
-        <div className="mx-[calc(50%-50vw)] w-screen bg-[linear-gradient(180deg,#d7e7ea_0%,#eef4f3_100%)] py-8 md:py-10">
-          <div className="mx-auto max-w-[min(100vw-32px,1540px)] px-4 md:px-6">
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-black/42">Карта и расположение</p>
-                <h2 className="mt-3 font-display text-4xl text-ink md:text-5xl">Посмотрите, где находится {resort.title}</h2>
-              </div>
-              <div className="max-w-xl text-sm leading-7 text-black/62">
-                До воды {resort.distanceToLakeM} м, адрес: {resort.address}. Можно заранее понять локацию и удобство подъезда.
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-[2.2rem] border border-white/60 bg-white shadow-[0_28px_80px_rgba(17,36,42,0.12)]">
-              <ResortLocationMap
-                title={resort.title}
-                address={resort.address}
-                latitude={resort.latitude}
-                longitude={resort.longitude}
-              />
-            </div>
-
-            <div className="mt-5 grid gap-4 rounded-[2rem] bg-white/78 p-5 shadow-[0_12px_40px_rgba(17,36,42,0.08)] backdrop-blur-sm md:grid-cols-[1fr_auto] md:items-center">
-              <div>
-                <p className="flex items-center gap-2 text-base text-ink">
-                  <MapPin size={18} />
-                  {resort.address}
-                </p>
-                <p className="mt-2 text-sm text-black/60">Координаты: {resort.latitude}, {resort.longitude}</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <a href={`tel:${resort.contactPhone}`} className="inline-flex items-center justify-center gap-2 rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">
-                  <PhoneCall size={16} />
-                  Позвонить
-                </a>
-                <a href={`https://wa.me/${resort.whatsapp}`} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-pine">
-                  <MessageCircle size={16} />
-                  WhatsApp
-                </a>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -304,7 +259,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
               </div>
             </div>
 
-            <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+            <div id="reviews" className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="font-display text-3xl text-ink">Отзывы гостей</h2>
                 {resort.approvedReviewsCount > 0 && <p className="text-sm text-black/55">{resort.ratingAverage} / 5</p>}
@@ -341,7 +296,54 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
             </div>
 
             <LeadForm resortId={resort.id} id="lead-form" />
-            <ReviewForm resortId={resort.id} />
+            <ReviewForm resortId={resort.id} returnTo={`/catalog/${resort.slug}`} />
+          </div>
+        </div>
+      </section>
+
+      <section className="overflow-x-clip pt-6">
+        <div className="relative left-1/2 w-screen -translate-x-1/2 bg-[linear-gradient(180deg,#d7e7ea_0%,#eef4f3_100%)] py-10 md:py-12">
+          <div className="mx-auto w-full max-w-[1540px] px-5 md:px-8">
+            <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-end">
+              <div className="max-w-4xl">
+                <p className="text-xs uppercase tracking-[0.22em] text-black/42">Карта и расположение</p>
+                <h2 className="mt-3 max-w-3xl font-display text-4xl leading-[0.95] text-ink md:text-5xl xl:text-6xl">
+                  Где находится {resort.title}
+                </h2>
+              </div>
+              <div className="max-w-xl text-sm leading-7 text-black/62 lg:justify-self-end">
+                До воды {resort.distanceToLakeM} м, адрес: {resort.address}. Здесь удобно заранее оценить локацию, берег и подъезд к объекту.
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[2.2rem] border border-white/60 bg-white shadow-[0_28px_80px_rgba(17,36,42,0.12)]">
+              <ResortLocationMap
+                title={resort.title}
+                address={resort.address}
+                latitude={resort.latitude}
+                longitude={resort.longitude}
+              />
+            </div>
+
+            <div className="mt-5 grid gap-4 rounded-[2rem] bg-white/78 p-5 shadow-[0_12px_40px_rgba(17,36,42,0.08)] backdrop-blur-sm md:grid-cols-[1fr_auto] md:items-center">
+              <div>
+                <p className="flex items-center gap-2 text-base text-ink">
+                  <MapPin size={18} />
+                  {resort.address}
+                </p>
+                <p className="mt-2 text-sm text-black/60">Координаты: {resort.latitude}, {resort.longitude}</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <a href={`tel:${resort.contactPhone}`} className="inline-flex items-center justify-center gap-2 rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">
+                  <PhoneCall size={16} />
+                  Позвонить
+                </a>
+                <a href={`https://wa.me/${resort.whatsapp}`} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-pine">
+                  <MessageCircle size={16} />
+                  WhatsApp
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
