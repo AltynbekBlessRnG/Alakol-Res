@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+}
+
+enum ResortStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+}
+
+model User {
+  id             String              @id @default(cuid())
+  email          String              @unique
+  name           String
+  passwordHash   String
+  role           UserRole
+  ownerProfile   ResortOwnerProfile?
+  leads          Lead[]              @relation("LeadHandledBy")
+  moderationLogs ModerationReview[]  @relation("ReviewAdmin")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model ResortOwnerProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  company   String
+  phone     String
+  whatsapp  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resorts   Resort[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Resort {
+  id                String             @id @default(cuid())
+  ownerProfileId    String
+  title             String
+  slug              String             @unique
+  shortDescription  String
+  description       String
+  address           String
+  zone              String
+  distanceToLakeM   Int
+  latitude          Float
+  longitude         Float
+  minPrice          Int
+  maxPrice          Int
+  foodOptions       String
+  accommodationType String
+  contactPhone      String
+  whatsapp          String
+  familyFriendly    Boolean            @default(true)
+  youthFriendly     Boolean            @default(false)
+  hasPool           Boolean            @default(false)
+  hasWifi           Boolean            @default(true)
+  hasParking        Boolean            @default(true)
+  hasKidsZone       Boolean            @default(false)
+  isFeatured        Boolean            @default(false)
+  status            ResortStatus       @default(DRAFT)
+  ownerProfile      ResortOwnerProfile @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+  images            ResortImage[]
+  amenities         ResortAmenity[]
+  prices            ResortPrice[]
+  leads             Lead[]
+  moderationReviews ModerationReview[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model ResortImage {
+  id        String   @id @default(cuid())
+  resortId  String
+  url       String
+  alt       String
+  sortOrder Int      @default(0)
+  resort    Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
+}
+
+model ResortAmenity {
+  id       String @id @default(cuid())
+  resortId String
+  label    String
+  resort   Resort @relation(fields: [resortId], references: [id], onDelete: Cascade)
+}
+
+model ResortPrice {
+  id          String @id @default(cuid())
+  resortId    String
+  label       String
+  amount      Int
+  description String
+  resort      Resort @relation(fields: [resortId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  resortId    String
+  handledById String?
+  guestName   String
+  phone       String
+  note        String?
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+  resort      Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
+  handledBy   User?    @relation("LeadHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
+}
+
+model ModerationReview {
+  id         String   @id @default(cuid())
+  resortId   String
+  adminId    String?
+  action     String
+  comment    String?
+  createdAt  DateTime @default(now())
+  resort     Resort   @relation(fields: [resortId], references: [id], onDelete: Cascade)
+  admin      User?    @relation("ReviewAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+}
