@@ -1,4 +1,9 @@
-import { getPublishedResortBySlug, listFeaturedResorts, listPublishedResorts, type ResortWithRelations } from "@/lib/demo-data";
+import {
+  getPublishedResortBySlugFromSupabase,
+  listFeaturedResortsFromSupabase,
+  listPublishedResortsFromSupabase,
+  type ResortWithRelations
+} from "@/lib/supabase/resorts";
 
 export type CatalogFilters = {
   zone?: string;
@@ -62,13 +67,14 @@ function matchResort(resort: ResortWithRelations, filters: CatalogFilters) {
 }
 
 export async function getCatalogResorts(filters: CatalogFilters): Promise<ResortWithRelations[]> {
-  return listPublishedResorts().filter((resort) => matchResort(resort, filters));
+  const resorts = await listPublishedResortsFromSupabase();
+  return resorts.filter((resort) => matchResort(resort, filters));
 }
 
 export async function getFeaturedResorts(): Promise<ResortWithRelations[]> {
-  return listFeaturedResorts();
+  return listFeaturedResortsFromSupabase();
 }
 
 export async function getResortBySlug(slug: string): Promise<ResortWithRelations | null> {
-  return getPublishedResortBySlug(slug);
+  return getPublishedResortBySlugFromSupabase(slug);
 }

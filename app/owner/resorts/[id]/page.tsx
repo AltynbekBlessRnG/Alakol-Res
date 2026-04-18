@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { OwnerResortForm } from "@/components/forms/owner-resort-form";
-import { enrichResort, getResortById } from "@/lib/demo-data";
 import { requireRole } from "@/lib/session";
 import { noIndexMetadata } from "@/lib/seo";
+import { getResortByIdFromSupabase } from "@/lib/supabase/data";
 
 export const metadata: Metadata = noIndexMetadata("Редактирование объекта", "Служебная страница редактирования карточки объекта.");
 
@@ -16,7 +16,7 @@ export default async function OwnerResortPage({ params, searchParams }: OwnerRes
   const { id } = await params;
   const query = await searchParams;
   const session = await requireRole("OWNER");
-  const resort = getResortById(id);
+  const resort = await getResortByIdFromSupabase(id);
 
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) notFound();
 
@@ -31,7 +31,7 @@ export default async function OwnerResortPage({ params, searchParams }: OwnerRes
           </p>
         )}
         <div className="mt-8">
-          <OwnerResortForm resort={enrichResort(resort)} />
+          <OwnerResortForm resort={resort} />
         </div>
       </div>
     </main>

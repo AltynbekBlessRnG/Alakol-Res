@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createAnalyticsEvent } from "@/lib/demo-data";
+import { createAnalyticsEventInSupabase } from "@/lib/supabase/data";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  createAnalyticsEvent({
+  await createAnalyticsEventInSupabase({
     eventType: String(body.eventType || "unknown"),
     resortId: body.resortId ? String(body.resortId) : undefined,
     slug: body.slug ? String(body.slug) : undefined,

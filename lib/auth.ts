@@ -1,6 +1,6 @@
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { getUserByEmail, verifyPassword } from "@/lib/demo-data";
+import { getUserByEmailFromSupabase, verifyPasswordAgainstSupabaseUser } from "@/lib/supabase/data";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -19,10 +19,10 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
 
-        const user = getUserByEmail(credentials.email);
+        const user = await getUserByEmailFromSupabase(credentials.email);
 
         if (!user) return null;
-        if (!verifyPassword(user, credentials.password)) return null;
+        if (!verifyPasswordAgainstSupabaseUser(user, credentials.password)) return null;
 
         return {
           id: user.id,

@@ -7,6 +7,10 @@ export function isSupabaseConfigured() {
   return Boolean(supabaseUrl && supabasePublishableKey);
 }
 
+export function isSupabaseAdminConfigured() {
+  return Boolean(supabaseUrl && supabaseServiceRoleKey);
+}
+
 export function isSupabaseStorageConfigured() {
   return Boolean(supabaseUrl && supabaseServiceRoleKey && supabaseStorageBucket);
 }

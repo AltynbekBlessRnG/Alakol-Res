@@ -99,8 +99,8 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
       addressCountry: "KZ"
     },
     telephone: resort.contactPhone,
-    image: resort.images.map((image) => image.url),
-    amenityFeature: resort.amenities.map((amenity) => ({
+    image: resort.images.map((image: (typeof resort.images)[number]) => image.url),
+    amenityFeature: resort.amenities.map((amenity: (typeof resort.amenities)[number]) => ({
       "@type": "LocationFeatureSpecification",
       name: amenity.label,
       value: true
@@ -219,7 +219,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
               <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
                 <h2 className="font-display text-3xl text-ink">Условия и удобства</h2>
                 <div className="mt-5 flex flex-wrap gap-2">
-                  {resort.amenities.map((amenity) => (
+                  {resort.amenities.map((amenity: (typeof resort.amenities)[number]) => (
                     <span key={amenity.id} className="rounded-full bg-[#f7f1e6] px-4 py-3 text-sm">
                       {amenity.label}
                     </span>
@@ -247,7 +247,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
             <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
               <h2 className="font-display text-3xl text-ink">Цены и размещение</h2>
               <div className="mt-6 grid gap-4">
-                {resort.prices.map((price) => (
+                {resort.prices.map((price: (typeof resort.prices)[number]) => (
                   <div key={price.id} className="flex flex-col gap-2 rounded-[1.5rem] bg-[#f7f1e6] px-5 py-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <p className="text-lg font-medium text-ink">{price.label}</p>
@@ -265,7 +265,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
                 {resort.approvedReviewsCount > 0 && <p className="text-sm text-black/55">{resort.ratingAverage} / 5</p>}
               </div>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {resort.reviews.length ? resort.reviews.map((review) => (
+                {resort.reviews.length ? resort.reviews.map((review: (typeof resort.reviews)[number]) => (
                   <div key={review.id} className="rounded-[1.5rem] bg-[#f7f1e6] p-5">
                     <div className="flex items-center justify-between">
                       <p className="font-medium text-ink">{review.authorName}</p>

@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { getPublishedResortBySlug, listUserFavoriteResorts, toggleFavoriteForUser } from "@/lib/demo-data";
+import { getPublishedResortBySlugFromSupabase } from "@/lib/supabase/resorts";
+import { listUserFavoriteResortsFromSupabase, toggleFavoriteForUserInSupabase } from "@/lib/supabase/data";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -10,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ authenticated: false, favorites: [], slugs: [], count: 0 });
   }
 
-  const favorites = listUserFavoriteResorts(session.user.id);
+  const favorites = await listUserFavoriteResortsFromSupabase(session.user.id);
 
   return NextResponse.json({
     authenticated: true,
@@ -29,13 +30,13 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as { slug?: string };
   const slug = String(body.slug || "");
-  const resort = getPublishedResortBySlug(slug);
+  const resort = await getPublishedResortBySlugFromSupabase(slug);
 
   if (!resort) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  const favorite = toggleFavoriteForUser(session.user.id, resort.id);
+  const favorite = await toggleFavoriteForUserInSupabase(session.user.id, resort.id);
 
   return NextResponse.json({ ok: true, favorite });
 }

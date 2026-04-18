@@ -3,8 +3,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { appendResortImages, getResortById } from "@/lib/demo-data";
 import { authOptions } from "@/lib/auth";
+import { appendResortImagesInSupabase, getResortByIdFromSupabase } from "@/lib/supabase/data";
 import { uploadResortImagesToSupabaseStorage } from "@/lib/supabase/storage";
 
 export async function POST(request: Request) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const resortId = String(formData.get("resortId") || "");
   const files = formData.getAll("photos").filter((file): file is File => file instanceof File && file.size > 0);
 
-  const resort = getResortById(resortId);
+  const resort = await getResortByIdFromSupabase(resortId);
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
   }
 
-  appendResortImages(resortId, uploadedUrls);
+  await appendResortImagesInSupabase(resortId, uploadedUrls);
 
   return NextResponse.json({ urls: uploadedUrls }, { status: 201 });
 }

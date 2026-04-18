@@ -2,20 +2,27 @@ import type { Metadata } from "next";
 import { AdminReviewForm } from "@/components/forms/admin-review-form";
 import { PendingReviewModeration } from "@/components/forms/pending-review-moderation";
 import { NotificationsPanel } from "@/components/layout/notifications-panel";
-import { listAnalyticsSummary, listAudit, listIncompleteResorts, listNotifications, listPendingResorts, listPendingReviews } from "@/lib/demo-data";
 import { requireRole } from "@/lib/session";
 import { noIndexMetadata } from "@/lib/seo";
+import {
+  listAnalyticsSummaryFromSupabase,
+  listAuditFromSupabase,
+  listIncompleteResortsFromSupabase,
+  listNotificationsFromSupabase,
+  listPendingResortsFromSupabase,
+  listPendingReviewsFromSupabase
+} from "@/lib/supabase/data";
 
 export const metadata: Metadata = noIndexMetadata("Админка", "Служебная страница модерации и управления каталогом.");
 
 export default async function AdminPage() {
   const session = await requireRole("ADMIN");
-  const pending = listPendingResorts();
-  const audit = listAudit(8);
-  const analytics = listAnalyticsSummary();
-  const incomplete = listIncompleteResorts().slice(0, 6);
-  const pendingReviews = listPendingReviews();
-  const notifications = listNotifications(session.user.id, 6);
+  const pending = await listPendingResortsFromSupabase();
+  const audit = await listAuditFromSupabase(8);
+  const analytics = await listAnalyticsSummaryFromSupabase();
+  const incomplete = (await listIncompleteResortsFromSupabase()).slice(0, 6);
+  const pendingReviews = await listPendingReviewsFromSupabase();
+  const notifications = await listNotificationsFromSupabase(session.user.id, 6);
 
   return (
     <main className="min-h-screen bg-mist px-5 py-10 md:px-8">

@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { listUserFavoriteResorts, listUserReviews } from "@/lib/demo-data";
 import { noIndexMetadata } from "@/lib/seo";
 import { requireRole } from "@/lib/session";
+import { listUserFavoriteResortsFromSupabase, listUserReviewsFromSupabase } from "@/lib/supabase/data";
 import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = noIndexMetadata("Мой аккаунт", "Личный раздел пользователя с избранным и отзывами.");
 
 export default async function AccountPage() {
   const session = await requireRole("USER");
-  const favorites = listUserFavoriteResorts(session.user.id);
-  const reviews = listUserReviews(session.user.id);
+  const favorites = await listUserFavoriteResortsFromSupabase(session.user.id);
+  const reviews = await listUserReviewsFromSupabase(session.user.id);
 
   return (
     <main className="min-h-screen bg-[#f7f1e6] px-5 py-10 md:px-8">

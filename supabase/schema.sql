@@ -127,6 +127,15 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.analytics_events (
+  id text primary key,
+  event_type text not null,
+  resort_id text references public.resorts(id) on delete set null,
+  slug text,
+  metadata text,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.password_reset_tokens (
   id text primary key,
   user_id text not null references public.users(id) on delete cascade,

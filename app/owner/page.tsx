@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LeadCrmForm } from "@/components/forms/lead-crm-form";
 import { NotificationsPanel } from "@/components/layout/notifications-panel";
-import { listNotifications, listOwnerLeads, listOwnerResorts } from "@/lib/demo-data";
 import { requireRole } from "@/lib/session";
 import { createDraftResortAction } from "@/lib/actions";
 import { noIndexMetadata } from "@/lib/seo";
+import { listNotificationsFromSupabase, listOwnerLeadsFromSupabase, listOwnerResortsFromSupabase } from "@/lib/supabase/data";
 
 export const metadata: Metadata = noIndexMetadata("Кабинет владельца", "Служебный кабинет владельца зоны отдыха.");
 
@@ -16,12 +16,12 @@ export default async function OwnerDashboardPage({
 }) {
   const session = await requireRole("OWNER");
   const params = await searchParams;
-  const resorts = listOwnerResorts(session.user.ownerProfileId!);
-  const leads = listOwnerLeads(session.user.ownerProfileId!, {
+  const resorts = await listOwnerResortsFromSupabase(session.user.ownerProfileId!);
+  const leads = await listOwnerLeadsFromSupabase(session.user.ownerProfileId!, {
     status: (Array.isArray(params.status) ? params.status[0] : params.status) as "all" | "new" | "contacted" | "no_answer" | "booked" | "closed" | undefined,
     q: Array.isArray(params.q) ? params.q[0] : params.q
   });
-  const notifications = listNotifications(session.user.id, 6);
+  const notifications = await listNotificationsFromSupabase(session.user.id, 6);
 
   return (
     <main className="min-h-screen bg-mist px-5 py-10 md:px-8">

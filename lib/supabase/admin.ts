@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import { getSupabaseAdminConfig, isSupabaseStorageConfigured } from "@/lib/supabase/env";
+import { getSupabaseAdminConfig, isSupabaseAdminConfigured } from "@/lib/supabase/env";
 
 export function createSupabaseAdminClient() {
-  if (!isSupabaseStorageConfigured()) {
+  if (!isSupabaseAdminConfigured()) {
     return null;
   }
 

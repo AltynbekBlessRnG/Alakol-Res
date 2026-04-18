@@ -3,31 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  addModerationReview,
-  appendResortImages,
-  createAnalyticsEvent,
-  createDraftResort,
-  createLead,
-  createNotification,
-  createPasswordResetToken,
-  createReview,
-  getOwnerProfileById,
-  getResortById,
   getResortCompleteness,
-  getUserById,
-  getValidPasswordResetToken,
-  listOwnerLeads,
-  markPasswordResetTokenUsed,
-  moderateReview,
-  replaceResortAmenities,
-  replaceResortImages,
-  setResortFeatured,
   type ResortStatus,
-  updateLead,
-  updateUserPassword,
-  updateResortRecord
 } from "@/lib/demo-data";
 import { requireRole } from "@/lib/session";
+import {
+  addModerationReviewInSupabase,
+  appendResortImagesInSupabase,
+  createAnalyticsEventInSupabase,
+  createDraftResortInSupabase,
+  createLeadInSupabase,
+  createNotificationInSupabase,
+  createPasswordResetTokenInSupabase,
+  createReviewInSupabase,
+  getResortByIdFromSupabase,
+  getUserByEmailFromSupabase,
+  getValidPasswordResetTokenFromSupabase,
+  listOwnerLeadsFromSupabase,
+  markPasswordResetTokenUsedInSupabase,
+  moderateReviewInSupabase,
+  replaceResortAmenitiesInSupabase,
+  replaceResortImagesInSupabase,
+  setResortFeaturedInSupabase,
+  updateLeadInSupabase,
+  updateResortRecordInSupabase,
+  updateUserPasswordInSupabase
+} from "@/lib/supabase/data";
 
 function toBool(value: FormDataEntryValue | null) {
   return value === "on" || value === "true";
@@ -41,20 +42,19 @@ export async function createLeadAction(formData: FormData) {
 
   if (!resortId || !guestName || !phone) return;
 
-  const leadId = createLead({ resortId, guestName, phone, note, source: "site_form" });
-  const resort = getResortById(resortId);
+  const leadId = await createLeadInSupabase({ resortId, guestName, phone, note, source: "site_form" });
+  const resort = await getResortByIdFromSupabase(resortId);
   if (resort) {
-    const ownerProfile = getOwnerProfileById(resort.ownerProfileId);
-    if (ownerProfile) {
-      createNotification({
-        userId: ownerProfile.userId,
+    if (resort.ownerProfile?.userId) {
+      await createNotificationInSupabase({
+        userId: resort.ownerProfile.userId,
         type: "lead_created",
         title: "Новая заявка",
         body: `${guestName} оставил заявку по объекту ${resort.title}.`,
         href: "/owner"
       });
     }
-    createAnalyticsEvent({ eventType: "lead_created", resortId, slug: resort.slug, metadata: JSON.stringify({ leadId }) });
+    await createAnalyticsEventInSupabase({ eventType: "lead_created", resortId, slug: resort.slug, metadata: JSON.stringify({ leadId }) });
   }
 
   redirect(`/catalog?lead=success`);
@@ -63,7 +63,7 @@ export async function createLeadAction(formData: FormData) {
 export async function updateResortAction(formData: FormData) {
   const session = await requireRole("OWNER");
   const id = String(formData.get("id") || "");
-  const resort = getResortById(id);
+  const resort = await getResortByIdFromSupabase(id);
 
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) return;
 
@@ -81,7 +81,7 @@ export async function updateResortAction(formData: FormData) {
     kind: index === 0 ? "cover" : "gallery"
   }));
 
-  updateResortRecord(id, {
+  await updateResortRecordInSupabase(id, {
     ...resort,
     title: String(formData.get("title") || resort.title),
     slug: slugify(String(formData.get("title") || resort.title), resort.id),
@@ -112,12 +112,12 @@ export async function updateResortAction(formData: FormData) {
     updatedAt: new Date()
   });
 
-  replaceResortAmenities(id, amenities);
+  await replaceResortAmenitiesInSupabase(id, amenities);
   if (images.length) {
-    replaceResortImages(id, imageItems);
+    await replaceResortImagesInSupabase(id, imageItems);
   }
 
-  addModerationReview({ resortId: id, action: "updated", comment: "Владелец обновил карточку" });
+  await addModerationReviewInSupabase({ resortId: id, action: "updated", comment: "Владелец обновил карточку" });
 
   revalidatePath("/owner");
   revalidatePath("/catalog");
@@ -127,7 +127,7 @@ export async function updateResortAction(formData: FormData) {
 export async function submitResortForReviewAction(formData: FormData) {
   const session = await requireRole("OWNER");
   const id = String(formData.get("id") || "");
-  const resort = getResortById(id);
+  const resort = await getResortByIdFromSupabase(id);
 
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) return;
 
@@ -136,11 +136,11 @@ export async function submitResortForReviewAction(formData: FormData) {
     redirect(`/owner/resorts/${id}?error=${encodeURIComponent(completeness.missing.join(", "))}`);
   }
 
-  updateResortRecord(id, { ...resort, status: "PENDING_REVIEW", updatedAt: new Date() });
-  addModerationReview({ resortId: id, action: "submitted", comment: "Отправлено на модерацию" });
-  const admin = getUserById("user-admin-1");
+  await updateResortRecordInSupabase(id, { ...resort, status: "PENDING_REVIEW", updatedAt: new Date() });
+  await addModerationReviewInSupabase({ resortId: id, action: "submitted", comment: "Отправлено на модерацию" });
+  const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
   if (admin) {
-    createNotification({
+    await createNotificationInSupabase({
       userId: admin.id,
       type: "resort_submitted",
       title: "Новый объект на модерации",
@@ -161,22 +161,21 @@ export async function moderateResortAction(formData: FormData) {
   const comment = String(formData.get("comment") || "");
   if (!id || !action) return;
 
-  const resort = getResortById(id);
+  const resort = await getResortByIdFromSupabase(id);
   if (!resort) return;
   const completeness = getResortCompleteness(resort);
   if (action === "publish" && !completeness.isReady) {
     redirect("/admin?error=incomplete");
   }
-  updateResortRecord(id, {
+  await updateResortRecordInSupabase(id, {
     ...resort,
     status: (action === "publish" ? "PUBLISHED" : "REJECTED") as ResortStatus,
     updatedAt: new Date()
   });
-  addModerationReview({ resortId: id, adminId: session.user.id, action, comment });
-  const ownerProfile = getOwnerProfileById(resort.ownerProfileId);
-  if (ownerProfile) {
-    createNotification({
-      userId: ownerProfile.userId,
+  await addModerationReviewInSupabase({ resortId: id, adminId: session.user.id, action, comment });
+  if (resort.ownerProfile?.userId) {
+    await createNotificationInSupabase({
+      userId: resort.ownerProfile.userId,
       type: action === "publish" ? "resort_published" : "resort_rejected",
       title: action === "publish" ? "Объект опубликован" : "Нужна доработка карточки",
       body: action === "publish" ? `${resort.title} теперь доступен в каталоге.` : `${resort.title} возвращён на доработку.`,
@@ -191,24 +190,25 @@ export async function moderateResortAction(formData: FormData) {
 
 export async function createDraftResortAction() {
   const session = await requireRole("OWNER");
-  const resortId = createDraftResort(session.user.ownerProfileId!);
+  const resortId = await createDraftResortInSupabase(session.user.ownerProfileId!);
+  if (!resortId) return;
 
   redirect(`/owner/resorts/${resortId}`);
 }
 
 export async function appendUploadedImagesAction(resortId: string, urls: string[]) {
-  appendResortImages(resortId, urls);
+  await appendResortImagesInSupabase(resortId, urls);
   revalidatePath(`/owner/resorts/${resortId}`);
 }
 
 export async function updateLeadAction(formData: FormData) {
   const session = await requireRole("OWNER");
   const id = String(formData.get("id") || "");
-  const status = String(formData.get("status") || "new") as Parameters<typeof updateLead>[1]["status"];
+  const status = String(formData.get("status") || "new") as "new" | "contacted" | "no_answer" | "booked" | "closed";
   const ownerComment = String(formData.get("ownerComment") || "");
-  const lead = listOwnerLeads(session.user.ownerProfileId!).find((item) => item.id === id);
+  const lead = (await listOwnerLeadsFromSupabase(session.user.ownerProfileId!)).find((item) => item.id === id);
   if (!lead) return;
-  updateLead(id, { status, ownerComment });
+  await updateLeadInSupabase(id, { status, ownerComment });
   revalidatePath("/owner");
 }
 
@@ -216,7 +216,7 @@ export async function toggleFeaturedAction(formData: FormData) {
   await requireRole("ADMIN");
   const id = String(formData.get("id") || "");
   const featured = String(formData.get("featured") || "") === "true";
-  setResortFeatured(id, featured);
+  await setResortFeaturedInSupabase(id, featured);
   revalidatePath("/admin");
   revalidatePath("/catalog");
   revalidatePath("/");
@@ -230,10 +230,10 @@ export async function createReviewAction(formData: FormData) {
   const rating = Number(formData.get("rating") || 0);
   const authorName = session.user.name?.trim() || "Гость";
   if (!resortId || !body || rating < 1 || rating > 5) return;
-  createReview({ resortId, authorName, body, rating, userId: session.user.id });
-  const admin = getUserById("user-admin-1");
+  await createReviewInSupabase({ resortId, authorName, body, rating, userId: session.user.id });
+  const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
   if (admin) {
-    createNotification({
+    await createNotificationInSupabase({
       userId: admin.id,
       type: "resort_submitted",
       title: "Новый отзыв на модерации",
@@ -248,7 +248,7 @@ export async function moderateReviewAction(formData: FormData) {
   await requireRole("ADMIN");
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "pending") as "approved" | "pending";
-  moderateReview(id, status);
+  await moderateReviewInSupabase(id, status);
   revalidatePath("/admin");
   revalidatePath("/catalog");
 }
@@ -256,19 +256,29 @@ export async function moderateReviewAction(formData: FormData) {
 export async function requestPasswordResetAction(formData: FormData) {
   const email = String(formData.get("email") || "");
   if (!email) return;
-  createPasswordResetToken(email);
+  const token = await createPasswordResetTokenInSupabase(email);
+  const user = await getUserByEmailFromSupabase(email);
+  if (token && user) {
+    await createNotificationInSupabase({
+      userId: user.id,
+      type: "password_reset",
+      title: "Запрос на сброс пароля",
+      body: `Токен для сброса пароля: ${token}`,
+      href: "/reset-password"
+    });
+  }
   redirect("/forgot-password?sent=1");
 }
 
 export async function resetPasswordAction(formData: FormData) {
   const token = String(formData.get("token") || "");
   const password = String(formData.get("password") || "");
-  const reset = getValidPasswordResetToken(token);
+  const reset = await getValidPasswordResetTokenFromSupabase(token);
   if (!reset || password.length < 8) {
     redirect("/reset-password?error=1");
   }
-  updateUserPassword(reset.userId, password);
-  markPasswordResetTokenUsed(reset.id);
+  await updateUserPasswordInSupabase(reset.userId, password);
+  await markPasswordResetTokenUsedInSupabase(reset.id);
   redirect("/login?reset=1");
 }
 

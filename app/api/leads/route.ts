@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createLead } from "@/lib/demo-data";
+import { createLeadInSupabase } from "@/lib/supabase/data";
 
 const schema = z.object({
   resortId: z.string(),
@@ -11,6 +11,6 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const data = schema.parse(await request.json());
-  const id = createLead(data);
+  const id = await createLeadInSupabase(data);
   return NextResponse.json({ id, status: "new", ...data }, { status: 201 });
 }
