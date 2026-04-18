@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { createReviewAction } from "@/lib/actions";
+import { useState } from "react";
 
 export function ReviewForm({ resortId, returnTo }: { resortId: string; returnTo: string }) {
   const { data: session, status } = useSession();
+  const [rating, setRating] = useState("5");
+  const [body, setBody] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (status === "loading") {
     return <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">Загружаем аккаунт…</div>;
@@ -29,25 +34,77 @@ export function ReviewForm({ resortId, returnTo }: { resortId: string; returnTo:
     );
   }
 
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    const nextBody = body.trim();
+    const nextRating = Number(rating);
+
+    if (!nextBody || nextRating < 1 || nextRating > 5) {
+      setError("Заполните текст отзыва и выберите корректную оценку.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resortId, rating: nextRating, body: nextBody })
+      });
+
+      const payload = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
+        setError(payload.message || "Не удалось отправить отзыв.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      setBody("");
+      setRating("5");
+      setSuccess(payload.message || "Отзыв отправлен на модерацию.");
+    } catch {
+      setError("Не удалось отправить отзыв. Попробуйте ещё раз.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <form action={createReviewAction} className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-      <input type="hidden" name="resortId" value={resortId} />
-      <input type="hidden" name="returnTo" value={returnTo} />
+    <form onSubmit={onSubmit} className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
       <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>
       <h3 className="mt-3 font-display text-3xl text-ink">Поделиться впечатлением</h3>
       <p className="mt-2 text-sm text-black/55">Отзыв будет опубликован от имени {session.user.name} после модерации.</p>
       <div className="mt-4 grid gap-4">
-        <select name="rating" defaultValue="5" className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none">
+        <select value={rating} onChange={(event) => setRating(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none">
           {[5, 4, 3, 2, 1].map((value) => (
             <option key={value} value={value}>{value} / 5</option>
           ))}
         </select>
         <textarea
-          name="body"
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
           placeholder="Поделитесь впечатлением о сервисе, пляже, чистоте и удобствах"
           className="min-h-[110px] rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
         />
-        <button className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">Отправить отзыв</button>
+        {error && <p className="rounded-2xl bg-[#f8dede] px-4 py-3 text-sm text-[#8f2c2c]">{error}</p>}
+        {success && (
+          <div className="rounded-2xl bg-[#dff4e7] px-4 py-3 text-sm text-pine">
+            {success}
+            <div className="mt-1">
+              <Link href="/account" className="underline">
+                Открыть мой аккаунт
+              </Link>
+            </div>
+          </div>
+        )}
+        <button disabled={isSubmitting} className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white disabled:opacity-70">
+          {isSubmitting ? "Отправляем..." : "Отправить отзыв"}
+        </button>
       </div>
     </form>
   );

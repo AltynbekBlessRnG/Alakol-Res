@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { LoginForm } from "@/components/forms/login-form";
 import { authOptions } from "@/lib/auth";
 import { noIndexMetadata } from "@/lib/seo";
@@ -9,9 +9,6 @@ export const metadata: Metadata = noIndexMetadata("Вход", "Вход в ак�
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
-  if (session?.user.role === "OWNER") redirect("/owner");
-  if (session?.user.role === "ADMIN") redirect("/admin");
-  if (session?.user.role === "USER") redirect("/account");
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#102028_0%,#244b56_100%)] px-5 py-16">
@@ -29,6 +26,20 @@ export default async function LoginPage() {
           </div>
         </div>
         <div className="p-8 md:p-10">
+          {session?.user && (
+            <div className="mb-6 rounded-[1.5rem] border border-black/10 bg-[#f7f1e6] p-4 text-sm text-black/68">
+              Сейчас вы уже вошли как <strong>{session.user.name}</strong> ({session.user.role}).
+              <div className="mt-2 flex flex-wrap gap-3">
+                <Link
+                  href={session.user.role === "ADMIN" ? "/admin" : session.user.role === "OWNER" ? "/owner" : "/account"}
+                  className="text-pine underline"
+                >
+                  Открыть текущий раздел
+                </Link>
+                <span>Или просто войдите ниже под другим аккаунтом.</span>
+              </div>
+            </div>
+          )}
           <p className="text-sm text-black/55">
             Можно войти под любым демо-аккаунтом. После авторизации сайт сам отправит вас в нужный раздел, а для обычного пользователя откроет личный аккаунт.
           </p>

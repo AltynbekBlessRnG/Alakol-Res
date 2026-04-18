@@ -143,7 +143,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
           <Image src={resort.images[0].url} alt={resort.images[0].alt} fill priority className="object-cover opacity-55" />
         )}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,29,37,0.18),rgba(15,29,37,0.84)),radial-gradient(circle_at_top_left,rgba(212,155,53,0.18),transparent_34%)]" />
-        <div className="relative mx-auto flex min-h-[62svh] max-w-7xl flex-col justify-between px-5 pb-12 pt-8 md:min-h-[72vh] md:px-8">
+        <div className="relative mx-auto flex min-h-[62svh] max-w-7xl flex-col justify-between px-5 pb-12 pt-24 md:min-h-[72vh] md:px-8 md:pt-28">
           <div className="flex items-center justify-between gap-4">
             <Link href="/catalog" className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur-sm">
               Назад в каталог

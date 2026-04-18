@@ -51,7 +51,7 @@ export default async function HomePage() {
 
   return (
     <main className="bg-[#f6f0e4] text-ink">
-      <section className="relative min-h-screen overflow-hidden bg-[#102028] text-white">
+      <section className="relative min-h-[calc(100svh-0.75rem)] overflow-hidden bg-[#102028] text-white">
         <Image
           src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80"
           alt="Берег Алаколя на закате"
@@ -60,50 +60,50 @@ export default async function HomePage() {
           className="object-cover opacity-60"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,20,27,0.2),rgba(9,20,27,0.84)),radial-gradient(circle_at_top_left,rgba(77,176,203,0.3),transparent_35%)]" />
-        <div className="relative mx-auto flex min-h-screen max-w-7xl items-end px-5 pb-12 pt-28 md:px-8 md:pb-16 md:pt-32">
+        <div className="relative mx-auto flex min-h-[calc(100svh-0.75rem)] max-w-7xl items-center px-5 pb-8 pt-24 md:px-8 md:pb-10 md:pt-28">
           <div className="grid w-full gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
             <div className="max-w-3xl">
               <p className="text-sm uppercase tracking-[0.28em] text-white/68">alakol select</p>
-              <h1 className="mt-6 max-w-4xl font-display text-5xl leading-[0.95] md:text-7xl">
+              <h1 className="mt-5 max-w-4xl font-display text-4xl leading-[0.94] md:text-6xl xl:text-7xl">
                 Зоны отдыха на Алаколе в одном удобном каталоге.
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-8 text-white/74">
+              <p className="mt-5 max-w-xl text-base leading-7 text-white/74 md:text-lg md:leading-8">
                 Смотрите фото, цены, карту, условия и расстояние до берега. Сравнивайте варианты и быстро выходите на заявку или WhatsApp.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/catalog" className="rounded-full bg-white px-6 py-3 text-sm font-medium text-ink shadow-[0_18px_45px_rgba(0,0,0,0.2)]">
+                <Link href="/catalog" className="interactive-surface rounded-full bg-white px-6 py-3 text-sm font-medium text-ink shadow-[0_18px_45px_rgba(0,0,0,0.2)]">
                   Смотреть каталог
                 </Link>
-                <Link href="/compare" className="rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white">
+                <Link href="/compare" className="interactive-surface rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white">
                   Сравнить объекты
                 </Link>
               </div>
-              <div className="mt-10 grid max-w-3xl gap-4 sm:grid-cols-3">
-                <div className="rounded-[1.6rem] border border-white/12 bg-white/10 p-5 backdrop-blur-md">
+              <div className="mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
+                <div className="rounded-[1.4rem] border border-white/12 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">Объектов</p>
-                  <p className="mt-3 font-display text-4xl">{resorts.length}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/65">Каталог постоянно пополняется новыми зонами отдыха.</p>
+                  <p className="mt-2 font-display text-3xl">{resorts.length}</p>
+                  <p className="mt-1 text-xs leading-5 text-white/65">Актуальные карточки с фото и условиями.</p>
                 </div>
-                <div className="rounded-[1.6rem] border border-white/12 bg-white/10 p-5 backdrop-blur-md">
+                <div className="rounded-[1.4rem] border border-white/12 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">По цене</p>
-                  <p className="mt-3 font-display text-3xl">от {formatPrice(minPrice)} ₸</p>
-                  <p className="mt-2 text-sm leading-6 text-white/65">Можно сразу понять, с какого бюджета начинать поиск.</p>
+                  <p className="mt-2 font-display text-2xl">от {formatPrice(minPrice)} ₸</p>
+                  <p className="mt-1 text-xs leading-5 text-white/65">Быстрый вход в понятный бюджет.</p>
                 </div>
-                <div className="rounded-[1.6rem] border border-white/12 bg-white/10 p-5 backdrop-blur-md">
+                <div className="rounded-[1.4rem] border border-white/12 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">Семейных</p>
-                  <p className="mt-3 font-display text-4xl">{familyCount}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/65">Есть отдельные варианты для семейного и спокойного отдыха.</p>
+                  <p className="mt-2 font-display text-3xl">{familyCount}</p>
+                  <p className="mt-1 text-xs leading-5 text-white/65">Подходят для детей и спокойного отдыха.</p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[2.2rem] border border-white/12 bg-[rgba(255,250,243,0.92)] p-6 text-ink shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-md md:p-7">
+            <div className="rounded-[2rem] border border-white/12 bg-[rgba(255,250,243,0.92)] p-5 text-ink shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-md md:p-6">
               <p className="text-xs uppercase tracking-[0.24em] text-black/38">быстрый поиск</p>
-              <h2 className="mt-3 font-display text-4xl leading-none text-ink">Найти подходящий вариант</h2>
+              <h2 className="mt-3 font-display text-3xl leading-none text-ink md:text-4xl">Найти подходящий вариант</h2>
               <p className="mt-3 max-w-sm text-sm leading-6 text-black/60">
                 Укажите бюджет или название объекта и перейдите к подборке с фильтрами, картой и карточками.
               </p>
-              <form action="/catalog" className="mt-6 space-y-4">
+              <form action="/catalog" className="mt-5 space-y-3">
                 <input
                   name="q"
                   placeholder="Например, Акши, семейный или бассейн"
@@ -123,12 +123,12 @@ export default async function HomePage() {
                     className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-pine"
                   />
                 </div>
-                <button className="inline-flex items-center gap-2 rounded-full bg-pine px-5 py-3 text-sm font-medium text-white shadow-[0_16px_35px_rgba(28,70,58,0.22)]">
+                <button className="interactive-surface inline-flex items-center gap-2 rounded-full bg-pine px-5 py-3 text-sm font-medium text-white shadow-[0_16px_35px_rgba(28,70,58,0.22)]">
                   Перейти в каталог
                   <ArrowRight size={16} />
                 </button>
               </form>
-              <div className="mt-6 flex flex-wrap gap-2 text-xs text-black/55">
+              <div className="mt-5 flex flex-wrap gap-2 text-xs text-black/55">
                 {["Фото и цены", "Карта и локация", "Сравнение", "WhatsApp и заявка"].map((item) => (
                   <span key={item} className="rounded-full bg-black/5 px-3 py-2">
                     {item}
@@ -157,7 +157,7 @@ export default async function HomePage() {
             <Link
               key={resort.id}
               href={`/catalog/${resort.slug}`}
-              className="group relative overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_70px_rgba(14,26,31,0.08)] transition duration-500 hover:-translate-y-2 hover:shadow-[0_30px_100px_rgba(14,26,31,0.15)]"
+              className="group interactive-surface relative overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_70px_rgba(14,26,31,0.08)] hover:shadow-[0_30px_100px_rgba(14,26,31,0.15)]"
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,155,53,0.12),transparent_38%)] opacity-0 transition duration-500 group-hover:opacity-100" />
               {resort.images[0] && (
@@ -290,7 +290,7 @@ export default async function HomePage() {
                 text: "Подборка объектов для тех, кто хочет быть ближе к воде."
               }
             ].map((item) => (
-              <Link key={item.href} href={item.href} className="rounded-[1.6rem] bg-[#f7f1e6] p-5 transition hover:bg-[#efe5d3]">
+              <Link key={item.href} href={item.href} className="interactive-surface rounded-[1.6rem] bg-[#f7f1e6] p-5 hover:bg-[#efe5d3]">
                 <h3 className="font-display text-2xl text-ink">{item.title}</h3>
                 <p className="mt-3 text-sm leading-6 text-black/62">{item.text}</p>
               </Link>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Star, Waves, Wifi } from "lucide-react";
+import { PublicActions } from "@/components/catalog/public-actions";
 import { ResortAmenity, ResortImage, ResortWithRelations } from "@/lib/demo-data";
 import { formatPrice } from "@/lib/utils";
 
@@ -12,10 +13,8 @@ export function ResortCard({ resort }: ResortCardProps) {
   const image = resort.images[0];
 
   return (
-    <Link
-      href={`/catalog/${resort.slug}`}
-      className="group relative overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_70px_rgba(14,26,31,0.08)] transition duration-500 hover:-translate-y-2 hover:shadow-[0_30px_100px_rgba(14,26,31,0.16)]"
-    >
+    <article className="group interactive-surface relative overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_70px_rgba(14,26,31,0.08)] hover:shadow-[0_30px_100px_rgba(14,26,31,0.16)]">
+      <Link href={`/catalog/${resort.slug}`} className="absolute inset-0 z-10" aria-label={`Открыть ${resort.title}`} />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,155,53,0.12),transparent_38%)] opacity-0 transition duration-500 group-hover:opacity-100" />
       <div className="relative h-72 overflow-hidden">
         {image && (
@@ -36,8 +35,11 @@ export function ResortCard({ resort }: ResortCardProps) {
             от {formatPrice(resort.minPrice)} ₸
           </div>
         </div>
+        <div className="absolute right-4 top-4 z-20">
+          <PublicActions slug={resort.slug} title={resort.title} compact />
+        </div>
       </div>
-      <div className="relative space-y-4 p-6">
+      <div className="relative z-20 space-y-4 p-6">
         <p className="text-sm leading-6 text-black/65 transition duration-300 group-hover:text-black/78">{resort.shortDescription}</p>
         {resort.approvedReviewsCount > 0 && (
           <div className="flex items-center gap-2 text-sm text-ink transition duration-300 group-hover:translate-x-1">
@@ -73,6 +75,6 @@ export function ResortCard({ resort }: ResortCardProps) {
           Открыть карточку
         </div>
       </div>
-    </Link>
+    </article>
   );
 }
