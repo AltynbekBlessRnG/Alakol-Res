@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ResortCard } from "@/components/catalog/resort-card";
-import type { ResortWithRelations } from "@/lib/demo-data";
+import type { ResortWithRelations } from "@/lib/types";
 
 type SeoLandingPageProps = {
   eyebrow: string;

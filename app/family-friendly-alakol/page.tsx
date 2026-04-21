@@ -3,6 +3,8 @@ import { SeoLandingPage } from "@/components/seo/seo-landing-page";
 import { getCatalogResorts } from "@/lib/resorts";
 import { absoluteUrl, siteKeywords, siteName } from "@/lib/seo";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Семейный отдых на Алаколе",
   description:

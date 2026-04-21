@@ -6,6 +6,8 @@ import { getCatalogResorts, getFeaturedResorts } from "@/lib/resorts";
 import { absoluteUrl, siteDescription, siteKeywords, siteName } from "@/lib/seo";
 import { formatPrice } from "@/lib/utils";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Главная",
   description:

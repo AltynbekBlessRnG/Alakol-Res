@@ -7,12 +7,24 @@ import {
   getResortByIdFromSupabase,
   getUserByEmailFromSupabase
 } from "@/lib/supabase/data";
+import { checkRateLimit, addRateLimitHeaders } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rateLimit = await checkRateLimit(request, { prefix: "reviews", maxRequests: 5 });
+  const headers = new Headers();
+  addRateLimitHeaders(headers, rateLimit);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { message: "Слишком много отзывов. Попробуйте позже." },
+      { status: 429, headers }
+    );
+  }
+
   const session = await getServerSession(authOptions);
 
   if (!session?.user || session.user.role !== "USER") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401, headers });
   }
 
   const body = (await request.json()) as {
@@ -58,5 +70,5 @@ export async function POST(request: Request) {
     ok: true,
     moderation: true,
     message: "Отзыв отправлен на модерацию. Он появится в карточке после проверки."
-  });
+  }, { headers });
 }

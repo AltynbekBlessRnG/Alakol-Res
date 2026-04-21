@@ -16,7 +16,8 @@ export const siteKeywords = [
 
 export function getSiteUrl() {
   const raw = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "http://localhost:3000";
-  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
+  const normalized = raw.replace(/^\uFEFF/, "").trim();
+  return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
 }
 
 export function getMetadataBase() {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Notification } from "@/lib/demo-data";
+import type { Notification } from "@/lib/types";
 
 export function NotificationsPanel({ notifications, title = "Уведомления" }: { notifications: Notification[]; title?: string }) {
   return (

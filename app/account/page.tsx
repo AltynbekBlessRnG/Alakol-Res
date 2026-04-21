@@ -78,9 +78,9 @@ export default async function AccountPage() {
                     <span className="text-sm text-black/55">{review.rating}/5</span>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-black/68">{review.body}</p>
-                  <p className="mt-3 text-xs uppercase tracking-[0.18em] text-black/38">
-                    {review.status === "approved" ? "Опубликован" : "На модерации"}
-                  </p>
+                    <p className="mt-3 text-xs uppercase tracking-[0.18em] text-black/38">
+                      {review.status === "approved" ? "Опубликован" : "На модерации"}
+                    </p>
                 </div>
               ))}
             </div>

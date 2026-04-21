@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Resort } from "@/lib/demo-data";
+import type { Resort } from "@/lib/types";
 
 const CatalogMapClient = dynamic(
   () => import("@/components/map/catalog-map-client").then((mod) => mod.CatalogMapClient),

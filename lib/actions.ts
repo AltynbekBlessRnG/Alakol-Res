@@ -2,10 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import {
-  getResortCompleteness,
-  type ResortStatus,
-} from "@/lib/demo-data";
+import type { ResortStatus } from "@/lib/types";
+import { getResortCompleteness } from "@/lib/supabase/data";
 import { requireRole } from "@/lib/session";
 import {
   addModerationReviewInSupabase,
@@ -24,6 +22,7 @@ import {
   moderateReviewInSupabase,
   replaceResortAmenitiesInSupabase,
   replaceResortImagesInSupabase,
+  replaceResortPricesInSupabase,
   setResortFeaturedInSupabase,
   updateLeadInSupabase,
   updateResortRecordInSupabase,
@@ -34,30 +33,60 @@ function toBool(value: FormDataEntryValue | null) {
   return value === "on" || value === "true";
 }
 
-export async function createLeadAction(formData: FormData) {
-  const resortId = String(formData.get("resortId") || "");
-  const guestName = String(formData.get("guestName") || "");
-  const phone = String(formData.get("phone") || "");
-  const note = String(formData.get("note") || "");
+function parsePriceRows(value: string) {
+  return value
+    .split("\n")
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => {
+      const [label = "", amount = "", description = ""] = row.split("|").map((item) => item.trim());
+      return {
+        label,
+        amount: Number(amount),
+        description
+      };
+    })
+    .filter((item) => item.label && Number.isFinite(item.amount) && item.amount > 0 && item.description);
+}
 
-  if (!resortId || !guestName || !phone) return;
+export type ActionResult = { success: true } | { success: false; error: string };
 
-  const leadId = await createLeadInSupabase({ resortId, guestName, phone, note, source: "site_form" });
-  const resort = await getResortByIdFromSupabase(resortId);
-  if (resort) {
-    if (resort.ownerProfile?.userId) {
-      await createNotificationInSupabase({
-        userId: resort.ownerProfile.userId,
-        type: "lead_created",
-        title: "Новая заявка",
-        body: `${guestName} оставил заявку по объекту ${resort.title}.`,
-        href: "/owner"
-      });
+export async function createLeadAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const resortId = String(formData.get("resortId") || "");
+    const guestName = String(formData.get("guestName") || "");
+    const phone = String(formData.get("phone") || "");
+    const note = String(formData.get("note") || "");
+
+    if (!resortId || !guestName || !phone) {
+      return { success: false, error: "Заполните обязательные поля" };
     }
-    await createAnalyticsEventInSupabase({ eventType: "lead_created", resortId, slug: resort.slug, metadata: JSON.stringify({ leadId }) });
-  }
 
-  redirect(`/catalog?lead=success`);
+    const leadId = await createLeadInSupabase({ resortId, guestName, phone, note, source: "site_form" });
+    if (!leadId) {
+      return { success: false, error: "Не удалось создать заявку" };
+    }
+
+    const resort = await getResortByIdFromSupabase(resortId);
+    if (resort) {
+      if (resort.ownerProfile?.userId) {
+        await createNotificationInSupabase({
+          userId: resort.ownerProfile.userId,
+          type: "lead_created",
+          title: "Новая заявка",
+          body: `${guestName} оставил заявку по объекту ${resort.title}.`,
+          href: "/owner"
+        });
+      }
+      await createAnalyticsEventInSupabase({ eventType: "lead_created", resortId, slug: resort.slug, metadata: JSON.stringify({ leadId }) });
+    }
+
+    redirect(`/catalog?lead=success`);
+    return { success: true };
+  } catch (error) {
+    console.error("createLeadAction error:", error);
+    return { success: false, error: "Произошла ошибка при создании заявки" };
+  }
 }
 
 export async function updateResortAction(formData: FormData) {
@@ -80,6 +109,7 @@ export async function updateResortAction(formData: FormData) {
     url,
     kind: index === 0 ? "cover" : "gallery"
   }));
+  const prices = parsePriceRows(String(formData.get("prices") || ""));
 
   await updateResortRecordInSupabase(id, {
     ...resort,
@@ -113,6 +143,7 @@ export async function updateResortAction(formData: FormData) {
   });
 
   await replaceResortAmenitiesInSupabase(id, amenities);
+  await replaceResortPricesInSupabase(id, prices);
   if (images.length) {
     await replaceResortImagesInSupabase(id, imageItems);
   }
@@ -125,75 +156,97 @@ export async function updateResortAction(formData: FormData) {
 }
 
 export async function submitResortForReviewAction(formData: FormData) {
-  const session = await requireRole("OWNER");
-  const id = String(formData.get("id") || "");
-  const resort = await getResortByIdFromSupabase(id);
+  try {
+    const session = await requireRole("OWNER");
+    const id = String(formData.get("id") || "");
+    const resort = await getResortByIdFromSupabase(id);
 
-  if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) return;
+    if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) {
+      return;
+    }
 
-  const completeness = getResortCompleteness(resort);
-  if (!completeness.isReady) {
-    redirect(`/owner/resorts/${id}?error=${encodeURIComponent(completeness.missing.join(", "))}`);
+    const completeness = getResortCompleteness(resort);
+    if (!completeness.isReady) {
+      redirect(`/owner/resorts/${id}?error=${encodeURIComponent(completeness.missing.join(", "))}`);
+    }
+
+    await updateResortRecordInSupabase(id, { ...resort, status: "PENDING_REVIEW", updatedAt: new Date() });
+    await addModerationReviewInSupabase({ resortId: id, action: "submitted", comment: "Отправлено на модерацию" });
+    const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
+    if (admin) {
+      await createNotificationInSupabase({
+        userId: admin.id,
+        type: "resort_submitted",
+        title: "Новый объект на модерации",
+        body: `${resort.title} отправлен на проверку.`,
+        href: "/admin"
+      });
+    }
+
+    revalidatePath("/owner");
+    revalidatePath("/admin");
+    redirect(`/owner/resorts/${id}?submitted=1`);
+  } catch (error) {
+    console.error("submitResortForReviewAction error:", error);
   }
-
-  await updateResortRecordInSupabase(id, { ...resort, status: "PENDING_REVIEW", updatedAt: new Date() });
-  await addModerationReviewInSupabase({ resortId: id, action: "submitted", comment: "Отправлено на модерацию" });
-  const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
-  if (admin) {
-    await createNotificationInSupabase({
-      userId: admin.id,
-      type: "resort_submitted",
-      title: "Новый объект на модерации",
-      body: `${resort.title} отправлен на проверку.`,
-      href: "/admin"
-    });
-  }
-
-  revalidatePath("/owner");
-  revalidatePath("/admin");
-  redirect(`/owner/resorts/${id}?submitted=1`);
 }
 
-export async function moderateResortAction(formData: FormData) {
-  const session = await requireRole("ADMIN");
-  const id = String(formData.get("id") || "");
-  const action = String(formData.get("action") || "");
-  const comment = String(formData.get("comment") || "");
-  if (!id || !action) return;
+export async function moderateResortAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const session = await requireRole("ADMIN");
+    const id = String(formData.get("id") || "");
+    const action = String(formData.get("action") || "");
+    const comment = String(formData.get("comment") || "");
+    if (!id || !action) {
+      return { success: false, error: "Не указан ID объекта или действие" };
+    }
 
-  const resort = await getResortByIdFromSupabase(id);
-  if (!resort) return;
-  const completeness = getResortCompleteness(resort);
-  if (action === "publish" && !completeness.isReady) {
-    redirect("/admin?error=incomplete");
-  }
-  await updateResortRecordInSupabase(id, {
-    ...resort,
-    status: (action === "publish" ? "PUBLISHED" : "REJECTED") as ResortStatus,
-    updatedAt: new Date()
-  });
-  await addModerationReviewInSupabase({ resortId: id, adminId: session.user.id, action, comment });
-  if (resort.ownerProfile?.userId) {
-    await createNotificationInSupabase({
-      userId: resort.ownerProfile.userId,
-      type: action === "publish" ? "resort_published" : "resort_rejected",
-      title: action === "publish" ? "Объект опубликован" : "Нужна доработка карточки",
-      body: action === "publish" ? `${resort.title} теперь доступен в каталоге.` : `${resort.title} возвращён на доработку.`,
-      href: `/owner/resorts/${resort.id}`
+    const resort = await getResortByIdFromSupabase(id);
+    if (!resort) {
+      return { success: false, error: "Объект не найден" };
+    }
+    const completeness = getResortCompleteness(resort);
+    if (action === "publish" && !completeness.isReady) {
+      redirect("/admin?error=incomplete");
+    }
+    await updateResortRecordInSupabase(id, {
+      ...resort,
+      status: (action === "publish" ? "PUBLISHED" : "REJECTED") as ResortStatus,
+      updatedAt: new Date()
     });
-  }
+    await addModerationReviewInSupabase({ resortId: id, adminId: session.user.id, action, comment });
+    if (resort.ownerProfile?.userId) {
+      await createNotificationInSupabase({
+        userId: resort.ownerProfile.userId,
+        type: action === "publish" ? "resort_published" : "resort_rejected",
+        title: action === "publish" ? "Объект опубликован" : "Нужна доработка карточки",
+        body: action === "publish" ? `${resort.title} теперь доступен в каталоге.` : `${resort.title} возвращён на доработку.`,
+        href: `/owner/resorts/${resort.id}`
+      });
+    }
 
-  revalidatePath("/admin");
-  revalidatePath("/catalog");
-  redirect("/admin");
+    revalidatePath("/admin");
+    revalidatePath("/catalog");
+    redirect("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("moderateResortAction error:", error);
+    return { success: false, error: "Ошибка при модерации объекта" };
+  }
 }
 
-export async function createDraftResortAction() {
-  const session = await requireRole("OWNER");
-  const resortId = await createDraftResortInSupabase(session.user.ownerProfileId!);
-  if (!resortId) return;
+export async function createDraftResortAction(_formData?: FormData) {
+  try {
+    const session = await requireRole("OWNER");
+    const resortId = await createDraftResortInSupabase(session.user.ownerProfileId!);
+    if (!resortId) {
+      return;
+    }
 
-  redirect(`/owner/resorts/${resortId}`);
+    redirect(`/owner/resorts/${resortId}`);
+  } catch (error) {
+    console.error("createDraftResortAction error:", error);
+  }
 }
 
 export async function appendUploadedImagesAction(resortId: string, urls: string[]) {
@@ -222,26 +275,34 @@ export async function toggleFeaturedAction(formData: FormData) {
   revalidatePath("/");
 }
 
-export async function createReviewAction(formData: FormData) {
-  const session = await requireRole("USER");
-  const resortId = String(formData.get("resortId") || "");
-  const returnTo = String(formData.get("returnTo") || "/favorites");
-  const body = String(formData.get("body") || "");
-  const rating = Number(formData.get("rating") || 0);
-  const authorName = session.user.name?.trim() || "Гость";
-  if (!resortId || !body || rating < 1 || rating > 5) return;
-  await createReviewInSupabase({ resortId, authorName, body, rating, userId: session.user.id });
-  const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
-  if (admin) {
-    await createNotificationInSupabase({
-      userId: admin.id,
-      type: "resort_submitted",
-      title: "Новый отзыв на модерации",
-      body: `Поступил новый отзыв для объекта ${resortId}.`,
-      href: "/admin"
-    });
+export async function createReviewAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const session = await requireRole("USER");
+    const resortId = String(formData.get("resortId") || "");
+    const returnTo = String(formData.get("returnTo") || "/favorites");
+    const body = String(formData.get("body") || "");
+    const rating = Number(formData.get("rating") || 0);
+    const authorName = session.user.name?.trim() || "Гость";
+    if (!resortId || !body || rating < 1 || rating > 5) {
+      return { success: false, error: "Заполните все поля отзыва" };
+    }
+    await createReviewInSupabase({ resortId, authorName, body, rating, userId: session.user.id });
+    const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
+    if (admin) {
+      await createNotificationInSupabase({
+        userId: admin.id,
+        type: "resort_submitted",
+        title: "Новый отзыв на модерации",
+        body: `Поступил новый отзыв для объекта ${resortId}.`,
+        href: "/admin"
+      });
+    }
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}review=success#reviews`);
+    return { success: true };
+  } catch (error) {
+    console.error("createReviewAction error:", error);
+    return { success: false, error: "Ошибка при создании отзыва" };
   }
-  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}review=success#reviews`);
 }
 
 export async function moderateReviewAction(formData: FormData) {
@@ -271,15 +332,19 @@ export async function requestPasswordResetAction(formData: FormData) {
 }
 
 export async function resetPasswordAction(formData: FormData) {
-  const token = String(formData.get("token") || "");
-  const password = String(formData.get("password") || "");
-  const reset = await getValidPasswordResetTokenFromSupabase(token);
-  if (!reset || password.length < 8) {
-    redirect("/reset-password?error=1");
+  try {
+    const token = String(formData.get("token") || "");
+    const password = String(formData.get("password") || "");
+    const reset = await getValidPasswordResetTokenFromSupabase(token);
+    if (!reset || password.length < 8) {
+      redirect("/reset-password?error=1");
+    }
+    await updateUserPasswordInSupabase(reset.userId, password);
+    await markPasswordResetTokenUsedInSupabase(reset.id);
+    redirect("/login?reset=1");
+  } catch (error) {
+    console.error("resetPasswordAction error:", error);
   }
-  await updateUserPasswordInSupabase(reset.userId, password);
-  await markPasswordResetTokenUsedInSupabase(reset.id);
-  redirect("/login?reset=1");
 }
 
 function slugify(value: string, fallbackId: string) {

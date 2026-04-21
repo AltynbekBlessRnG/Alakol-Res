@@ -20,10 +20,9 @@ import type {
   Review,
   User,
   UserReviewItem
-} from "@/lib/demo-data";
-import { getResortCompleteness } from "@/lib/demo-data";
+} from "@/lib/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getPublishedResortBySlugFromSupabase } from "@/lib/supabase/resorts";
+import { getPublishedResortBySlugFromSupabase, hydrateResortRows, type ResortRow } from "@/lib/supabase/resorts";
 
 type UserRow = {
   id: string;
@@ -92,40 +91,6 @@ type ModerationReviewRow = {
   action: string;
   comment: string | null;
   created_at: string;
-};
-
-type SimpleResortRow = {
-  id: string;
-  owner_profile_id: string;
-  title: string;
-  slug: string;
-  short_description: string;
-  description: string;
-  address: string;
-  zone: string;
-  distance_to_lake_m: number;
-  latitude: number;
-  longitude: number;
-  min_price: number;
-  max_price: number;
-  food_options: string;
-  accommodation_type: string;
-  contact_phone: string;
-  whatsapp: string;
-  family_friendly: boolean;
-  youth_friendly: boolean;
-  has_pool: boolean;
-  has_wifi: boolean;
-  has_parking: boolean;
-  has_kids_zone: boolean;
-  included_text: string;
-  rules_text: string;
-  beach_line: string;
-  transfer_info: string;
-  is_featured: boolean;
-  status: ResortStatus;
-  created_at: string;
-  updated_at: string;
 };
 
 type OwnerProfileRow = {
@@ -212,7 +177,7 @@ function mapPasswordResetToken(row: PasswordResetTokenRow): PasswordResetToken {
   };
 }
 
-function mapResortRow(row: SimpleResortRow): Resort {
+function mapResortRow(row: ResortRow): Resort {
   return {
     id: row.id,
     ownerProfileId: row.owner_profile_id,
@@ -259,7 +224,7 @@ export async function getUserByEmailFromSupabase(email: string) {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return null;
 
-  const { data } = await supabase.from("users").select("*").eq("email", email).maybeSingle();
+  const { data } = await supabase.from("users").select("*").eq("email", email.trim().toLowerCase()).maybeSingle();
   if (!data) return null;
   const ownerProfileId = data.role === "OWNER" ? await getOwnerProfileIdForUser(data.id) : null;
   return mapUser(data as UserRow, ownerProfileId);
@@ -277,6 +242,95 @@ export async function getUserByIdFromSupabase(id: string) {
 
 export function verifyPasswordAgainstSupabaseUser(user: User, password: string) {
   return bcrypt.compareSync(password, user.passwordHash);
+}
+
+export async function createUserInSupabase(input: {
+  email: string;
+  name: string;
+  password: string;
+  role?: "USER" | "OWNER" | "ADMIN";
+  ownerProfile?: {
+    company: string;
+    phone: string;
+    whatsapp: string;
+  };
+}) {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ok: false as const, reason: "unavailable" as const };
+
+  const email = input.email.trim().toLowerCase();
+  const name = input.name.trim();
+  const ownerProfile = input.ownerProfile
+    ? {
+        company: input.ownerProfile.company.trim(),
+        phone: input.ownerProfile.phone.trim(),
+        whatsapp: input.ownerProfile.whatsapp.trim()
+      }
+    : null;
+
+  if (!email || !name || input.password.length < 8) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+
+  const existing = await getUserByEmailFromSupabase(email);
+  if (existing) {
+    return { ok: false as const, reason: "exists" as const };
+  }
+
+  const id = createId("user");
+  const now = new Date().toISOString();
+  const passwordHash = bcrypt.hashSync(input.password, 10);
+  const role = input.role ?? "USER";
+  const ownerProfileId = role === "OWNER" ? createId("owner-profile") : null;
+
+  if (role === "OWNER" && (!ownerProfile || !ownerProfile.company || !ownerProfile.phone || !ownerProfile.whatsapp)) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+
+  const { error } = await supabase.from("users").insert({
+    id,
+    email,
+    name,
+    password_hash: passwordHash,
+    role,
+    ...(role === "OWNER" ? {} : {}),
+    created_at: now,
+    updated_at: now
+  });
+
+  if (error) {
+    return { ok: false as const, reason: "insert_failed" as const };
+  }
+
+  if (role === "OWNER" && ownerProfileId && ownerProfile) {
+    const { error: ownerError } = await supabase.from("owner_profiles").insert({
+      id: ownerProfileId,
+      user_id: id,
+      company: ownerProfile.company,
+      phone: ownerProfile.phone,
+      whatsapp: ownerProfile.whatsapp,
+      created_at: now,
+      updated_at: now
+    });
+
+    if (ownerError) {
+      await supabase.from("users").delete().eq("id", id);
+      return { ok: false as const, reason: "insert_failed" as const };
+    }
+  }
+
+  return {
+    ok: true as const,
+    user: {
+      id,
+      email,
+      name,
+      passwordHash,
+      role,
+      ownerProfileId,
+      emailVerifiedAt: null
+    } satisfies User
+  };
 }
 
 export async function listNotificationsFromSupabase(userId: string, limit = 8) {
@@ -409,9 +463,9 @@ async function listResortsByIdsFromSupabase(ids: string[]) {
   const supabase = createSupabaseAdminClient();
   if (!supabase || !ids.length) return [];
   const { data } = await supabase.from("resorts").select("*").in("id", ids);
-  const rows = (data as SimpleResortRow[] | null) ?? [];
-  const published = await Promise.all(rows.map((row) => getResortByIdFromSupabase(row.id)));
-  return published.filter(Boolean) as ResortWithRelations[];
+  const rows = (data as ResortRow[] | null) ?? [];
+  const resorts = await hydrateResortRows(rows);
+  return ids.map((id) => resorts.find((resort) => resort.id === id)).filter(Boolean) as ResortWithRelations[];
 }
 
 export async function listAllPublishedSlugsFromSupabase() {
@@ -425,67 +479,17 @@ export async function getResortByIdFromSupabase(id: string): Promise<ResortWithR
   const supabase = createSupabaseAdminClient();
   if (!supabase) return null;
   const { data } = await supabase.from("resorts").select("*").eq("id", id).maybeSingle();
-  const row = data as SimpleResortRow | null;
+  const row = data as ResortRow | null;
   if (!row) return null;
-  const bySlug = await getPublishedResortBySlugFromSupabase(row.slug);
-  if (bySlug) return bySlug;
-
-  const [{ data: images }, { data: amenities }, { data: prices }, { data: reviews }, { data: ownerProfile }] = await Promise.all([
-    supabase.from("resort_images").select("*").eq("resort_id", id).order("sort_order", { ascending: true }),
-    supabase.from("resort_amenities").select("*").eq("resort_id", id),
-    supabase.from("resort_prices").select("*").eq("resort_id", id).order("amount", { ascending: true }),
-    supabase.from("reviews").select("*").eq("resort_id", id).eq("status", "approved").order("created_at", { ascending: false }),
-    supabase.from("owner_profiles").select("*").eq("id", row.owner_profile_id).maybeSingle()
-  ]);
-
-  const result: ResortWithRelations = {
-    ...mapResortRow(row),
-    images: ((images as Array<{ id: string; resort_id: string; url: string; alt: string; sort_order: number; kind: string }> | null) ?? []).map((item) => ({
-      id: item.id,
-      resortId: item.resort_id,
-      url: item.url,
-      alt: item.alt,
-      sortOrder: item.sort_order,
-      kind: item.kind,
-      isCover: item.kind === "cover" || item.sort_order === 0
-    })),
-    amenities: ((amenities as Array<{ id: string; resort_id: string; label: string }> | null) ?? []).map((item) => ({
-      id: item.id,
-      resortId: item.resort_id,
-      label: item.label
-    })),
-    prices: ((prices as Array<{ id: string; resort_id: string; label: string; amount: number; description: string }> | null) ?? []).map((item) => ({
-      id: item.id,
-      resortId: item.resort_id,
-      label: item.label,
-      amount: item.amount,
-      description: item.description
-    })),
-    ownerProfile: ownerProfile
-      ? {
-          id: (ownerProfile as OwnerProfileRow).id,
-          userId: (ownerProfile as OwnerProfileRow).user_id,
-          company: (ownerProfile as OwnerProfileRow).company,
-          phone: (ownerProfile as OwnerProfileRow).phone,
-          whatsapp: (ownerProfile as OwnerProfileRow).whatsapp
-        }
-      : undefined,
-    reviews: ((reviews as ReviewRow[] | null) ?? []).map(mapReview),
-    ratingAverage: 0,
-    approvedReviewsCount: 0
-  };
-
-  const approvedReviewsCount = result.reviews.length;
-  result.approvedReviewsCount = approvedReviewsCount;
-  result.ratingAverage = approvedReviewsCount ? Number((result.reviews.reduce((sum, item) => sum + item.rating, 0) / approvedReviewsCount).toFixed(1)) : 0;
-  return result;
+  const hydrated = await hydrateResortRows([row]);
+  return hydrated[0] ?? null;
 }
 
 export async function listOwnerResortsFromSupabase(ownerProfileId: string) {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return [];
   const { data } = await supabase.from("resorts").select("*").eq("owner_profile_id", ownerProfileId).order("updated_at", { ascending: false });
-  return ((data as SimpleResortRow[] | null) ?? []).map(mapResortRow);
+  return ((data as ResortRow[] | null) ?? []).map(mapResortRow);
 }
 
 export async function listOwnerLeadsFromSupabase(ownerProfileId: string, filters?: { status?: LeadStatus | "all"; q?: string }): Promise<OwnerLead[]> {
@@ -516,9 +520,8 @@ export async function listOwnerLeadsFromSupabase(ownerProfileId: string, filters
 export async function listPendingResortsFromSupabase(): Promise<PendingResort[]> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return [];
-  const { data } = await supabase.from("resorts").select("id").in("status", ["PENDING_REVIEW", "REJECTED"]).order("updated_at", { ascending: false });
-  const resorts = await Promise.all((((data as Array<{ id: string }> | null) ?? []).map((item) => getResortByIdFromSupabase(item.id))));
-  const valid = resorts.filter(Boolean) as ResortWithRelations[];
+  const { data } = await supabase.from("resorts").select("*").in("status", ["PENDING_REVIEW", "REJECTED"]).order("updated_at", { ascending: false });
+  const valid = await hydrateResortRows((data as ResortRow[] | null) ?? []);
   return Promise.all(valid.map(async (resort) => ({
     ...resort,
     moderationReviews: await listModerationReviewsByResortFromSupabase(resort.id),
@@ -570,9 +573,9 @@ export async function listAuditFromSupabase(limit = 8): Promise<AuditItem[]> {
 export async function listIncompleteResortsFromSupabase() {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return [];
-  const { data } = await supabase.from("resorts").select("id").order("updated_at", { ascending: false });
-  const resorts = await Promise.all((((data as Array<{ id: string }> | null) ?? []).map((item) => getResortByIdFromSupabase(item.id))));
-  return (resorts.filter(Boolean) as ResortWithRelations[])
+  const { data } = await supabase.from("resorts").select("*").order("updated_at", { ascending: false });
+  const resorts = await hydrateResortRows((data as ResortRow[] | null) ?? []);
+  return resorts
     .map((resort) => ({ ...resort, completeness: getResortCompleteness(resort) }))
     .filter((resort) => !resort.completeness.isReady);
 }
@@ -724,6 +727,25 @@ export async function replaceResortAmenitiesInSupabase(resortId: string, ameniti
   );
 }
 
+export async function replaceResortPricesInSupabase(
+  resortId: string,
+  prices: Array<{ label: string; amount: number; description: string }>
+) {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return;
+  await supabase.from("resort_prices").delete().eq("resort_id", resortId);
+  if (!prices.length) return;
+  await supabase.from("resort_prices").insert(
+    prices.map((price) => ({
+      id: createId("price"),
+      resort_id: resortId,
+      label: price.label,
+      amount: price.amount,
+      description: price.description
+    }))
+  );
+}
+
 export async function addModerationReviewInSupabase(input: { resortId: string; adminId?: string; action: string; comment?: string }) {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return;
@@ -817,4 +839,31 @@ export async function createDraftResortInSupabase(ownerProfileId: string) {
     updated_at: now
   });
   return id;
+}
+
+export function getResortCompleteness(resort: ResortWithRelations | Resort) {
+  const base = "images" in resort ? resort as ResortWithRelations : {
+    ...resort,
+    images: [] as ResortImage[],
+    amenities: [] as ResortAmenity[],
+    prices: [] as ResortPrice[],
+    reviews: [] as Review[],
+    ratingAverage: 0,
+    approvedReviewsCount: 0
+  } as ResortWithRelations;
+
+  const missing: string[] = [];
+  if (!base.images.length || !base.images.some((image) => image.isCover || image.kind === "cover")) missing.push("cover-фото");
+  if (base.images.length < 3) missing.push("минимум 3 фото");
+  if (!base.description.trim() || base.description.trim().length < 140) missing.push("полное описание без пустых мест");
+  if (!base.includedText.trim()) missing.push("что включено в цену");
+  if (!base.rulesText.trim()) missing.push("правила проживания");
+  if (!base.beachLine.trim()) missing.push("описание берега");
+  if (!base.contactPhone.trim() || base.contactPhone.trim().length < 7) missing.push("рабочий телефон");
+  if (!base.whatsapp.trim() || base.whatsapp.trim().length < 7) missing.push("WhatsApp");
+  if (!base.address.trim()) missing.push("адрес");
+  if (base.prices.length === 0) missing.push("ценовые пакеты");
+  if (base.amenities.length < 3) missing.push("хотя бы 3 удобства");
+  if (!base.shortDescription.trim() || base.shortDescription.trim().length < 60) missing.push("сильное краткое описание");
+  return { isReady: missing.length === 0, missing };
 }

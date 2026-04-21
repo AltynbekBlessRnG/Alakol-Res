@@ -136,6 +136,68 @@ create table if not exists public.analytics_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.rate_limit_buckets (
+  key text primary key,
+  count integer not null,
+  reset_at timestamptz not null,
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.check_rate_limit(
+  bucket_key text,
+  max_requests integer,
+  window_ms integer default 60000
+)
+returns table(
+  success boolean,
+  limit integer,
+  remaining integer,
+  reset bigint,
+  retry_after integer
+)
+language plpgsql
+security definer
+as $$
+declare
+  bucket public.rate_limit_buckets%rowtype;
+  now_ts timestamptz := now();
+  next_reset timestamptz := now_ts + ((window_ms::text || ' milliseconds')::interval);
+begin
+  select *
+  into bucket
+  from public.rate_limit_buckets
+  where key = bucket_key
+  for update;
+
+  if not found or bucket.reset_at <= now_ts then
+    insert into public.rate_limit_buckets as buckets (key, count, reset_at, updated_at)
+    values (bucket_key, 1, next_reset, now_ts)
+    on conflict (key) do update
+      set count = 1,
+          reset_at = excluded.reset_at,
+          updated_at = excluded.updated_at;
+
+    return query
+    select true, max_requests, greatest(max_requests - 1, 0), floor(extract(epoch from next_reset) * 1000)::bigint, null::integer;
+    return;
+  end if;
+
+  if bucket.count >= max_requests then
+    return query
+    select false, max_requests, 0, floor(extract(epoch from bucket.reset_at) * 1000)::bigint, greatest(ceil(extract(epoch from (bucket.reset_at - now_ts)))::integer, 1);
+    return;
+  end if;
+
+  update public.rate_limit_buckets
+  set count = bucket.count + 1,
+      updated_at = now_ts
+  where key = bucket_key;
+
+  return query
+  select true, max_requests, greatest(max_requests - bucket.count - 1, 0), floor(extract(epoch from bucket.reset_at) * 1000)::bigint, null::integer;
+end;
+$$;
+
 create table if not exists public.password_reset_tokens (
   id text primary key,
   user_id text not null references public.users(id) on delete cascade,

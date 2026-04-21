@@ -1,13 +1,16 @@
-import { RESORT_STATUS, Resort, ResortAmenity, ResortImage, ResortPrice, ResortStatus } from "@/lib/demo-data";
 import { submitResortForReviewAction, updateResortAction } from "@/lib/actions";
 import { ImageUploadPanel } from "@/components/forms/image-upload-panel";
 import { Input, Textarea } from "@/components/ui/input";
+import { getResortCompleteness } from "@/lib/supabase/data";
+import { RESORT_STATUS, type Resort, type ResortAmenity, type ResortImage, type ResortPrice, type ResortStatus } from "@/lib/types";
 
 type OwnerResortFormProps = {
   resort: Resort & { amenities: ResortAmenity[]; prices: ResortPrice[]; images: ResortImage[] };
 };
 
 export function OwnerResortForm({ resort }: OwnerResortFormProps) {
+  const completeness = getResortCompleteness(resort);
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       <form action={updateResortAction} className="space-y-5 rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
@@ -103,8 +106,18 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
               name="images"
               defaultValue={resort.images.map((item) => item.url).join(", ")}
               className="min-h-[90px]"
-              placeholder="Можно оставить пустым и пользоваться загрузкой файлов справа."
+              placeholder="Первое изображение станет cover-фото. Можно оставить пустым и пользоваться загрузкой файлов справа."
             />
+          </div>
+          <div className="md:col-span-2">
+            <label className="mb-2 block text-sm text-black/55">Цены по строкам</label>
+            <Textarea
+              name="prices"
+              defaultValue={resort.prices.map((price) => `${price.label} | ${price.amount} | ${price.description}`).join("\n")}
+              className="min-h-[110px]"
+              placeholder={"Стандарт | 28000 | за номер в сутки\nСемейный люкс | 52000 | за номер в сутки"}
+            />
+            <p className="mt-2 text-xs leading-5 text-black/45">Формат: название | цена | описание. Минимум одна строка обязателен для публикации.</p>
           </div>
         </div>
         <button className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">Сохранить изменения</button>
@@ -118,6 +131,20 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           <p className="mt-4 text-sm leading-6 text-black/65">
             После отправки на модерацию объект попадёт в очередь суперадмина. Публично в каталоге отображаются только опубликованные карточки.
           </p>
+          <div className="mt-5 rounded-[1.5rem] bg-mist p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-black/40">Что нужно для публикации</p>
+            {completeness.isReady ? (
+              <p className="mt-3 text-sm text-pine">Карточка уже выглядит полной и готовой к модерации.</p>
+            ) : (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {completeness.missing.map((item) => (
+                  <span key={item} className="rounded-full bg-white px-3 py-2 text-xs text-black/65">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
           {resort.status !== RESORT_STATUS.PUBLISHED && (
             <form action={submitResortForReviewAction} className="mt-6">
               <input type="hidden" name="id" value={resort.id} />

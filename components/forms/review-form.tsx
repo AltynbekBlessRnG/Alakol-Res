@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 
-export function ReviewForm({ resortId, returnTo }: { resortId: string; returnTo: string }) {
+export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId: string; returnTo: string; embedded?: boolean }) {
   const { data: session, status } = useSession();
   const [rating, setRating] = useState("5");
   const [body, setBody] = useState("");
@@ -13,14 +13,14 @@ export function ReviewForm({ resortId, returnTo }: { resortId: string; returnTo:
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (status === "loading") {
-    return <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">Загружаем аккаунт…</div>;
+    return <div className={embedded ? "" : "rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]"}>Загружаем аккаунт…</div>;
   }
 
   if (session?.user.role !== "USER") {
     return (
-      <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-        <p className="text-xs uppercase tracking-[0.2em] text-black/45">Отзывы</p>
-        <h3 className="mt-3 font-display text-3xl text-ink">Войдите, чтобы оставить отзыв</h3>
+      <div className={embedded ? "" : "rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]"}>
+        {!embedded && <p className="text-xs uppercase tracking-[0.2em] text-black/45">Отзывы</p>}
+        <h3 className={`${embedded ? "font-display text-2xl text-ink" : "mt-3 font-display text-3xl text-ink"}`}>Войдите, чтобы оставить отзыв</h3>
         <p className="mt-4 text-sm leading-7 text-black/60">
           Отзывы публикуются от имени аккаунта и уходят на модерацию. Так карточки выглядят надёжнее, а впечатления гостей остаются понятными и живыми.
         </p>
@@ -75,9 +75,9 @@ export function ReviewForm({ resortId, returnTo }: { resortId: string; returnTo:
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-      <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>
-      <h3 className="mt-3 font-display text-3xl text-ink">Поделиться впечатлением</h3>
+    <form onSubmit={onSubmit} className={embedded ? "" : "rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]"}>
+      {!embedded && <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>}
+      <h3 className={`${embedded ? "font-display text-2xl text-ink" : "mt-3 font-display text-3xl text-ink"}`}>Поделиться впечатлением</h3>
       <p className="mt-2 text-sm text-black/55">Отзыв будет опубликован от имени {session.user.name} после модерации.</p>
       <div className="mt-4 grid gap-4">
         <select value={rating} onChange={(event) => setRating(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none">

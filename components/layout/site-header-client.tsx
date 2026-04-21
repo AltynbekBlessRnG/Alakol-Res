@@ -2,34 +2,39 @@
 
 import Link from "next/link";
 import { LogOut, Shield, UserCircle2, UserRound, Building2, Heart } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CompareLink } from "@/components/catalog/compare-link";
 import { FavoritesLink } from "@/components/catalog/favorites-link";
 
 type SiteHeaderClientProps = {
-  isAuthenticated: boolean;
+  isAuthenticated?: boolean;
   role?: "OWNER" | "ADMIN" | "USER";
   userName?: string | null;
 };
 
 export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeaderClientProps) {
+  const { data: session, status } = useSession();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const desktopMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const effectiveRole = role ?? session?.user.role;
+  const effectiveUserName = userName ?? session?.user.name ?? null;
+  const effectiveAuthenticated = typeof isAuthenticated === "boolean" ? isAuthenticated : Boolean(session?.user);
+  const isSessionLoading = status === "loading" && typeof isAuthenticated !== "boolean";
 
   const menuItems = useMemo(() => {
-    if (role === "ADMIN") {
+    if (effectiveRole === "ADMIN") {
       return [{ href: "/admin", label: "Админка", icon: Shield }];
     }
 
-    if (role === "OWNER") {
+    if (effectiveRole === "OWNER") {
       return [{ href: "/owner", label: "Кабинет владельца", icon: Building2 }];
     }
 
-    if (role === "USER") {
+    if (effectiveRole === "USER") {
       return [
         { href: "/account", label: "Мой аккаунт", icon: UserRound },
         { href: "/favorites", label: "Избранное", icon: Heart }
@@ -37,7 +42,7 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
     }
 
     return [];
-  }, [role]);
+  }, [effectiveRole]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -89,10 +94,10 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
           </Link>
           <FavoritesLink />
           <CompareLink />
-          {!isAuthenticated ? (
+          {!effectiveAuthenticated ? (
             <Link
               href="/login"
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#f0dfb8]"
+              className={`rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#f0dfb8] ${isSessionLoading ? "opacity-80" : ""}`}
             >
               Войти
             </Link>
@@ -104,12 +109,12 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
                 className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white transition hover:border-white/20 hover:bg-white/[0.09]"
               >
                 <UserCircle2 size={16} />
-                {userName || "Аккаунт"}
+                {effectiveUserName || "Аккаунт"}
               </button>
               {menuOpen && (
                 <div className="absolute right-0 top-[calc(100%+0.75rem)] min-w-[220px] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#102028]/96 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl">
                   <div className="px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/45">
-                    {role === "ADMIN" ? "Администратор" : role === "OWNER" ? "Владелец" : "Пользователь"}
+                    {effectiveRole === "ADMIN" ? "Администратор" : effectiveRole === "OWNER" ? "Владелец" : "Пользователь"}
                   </div>
                   {menuItems.map((item) => (
                     <Link
@@ -142,8 +147,8 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
           </Link>
           <FavoritesLink mobile />
           <CompareLink mobile />
-          {!isAuthenticated ? (
-            <Link href="/login" className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-black">
+          {!effectiveAuthenticated ? (
+            <Link href="/login" className={`rounded-full bg-white px-3 py-2 text-xs font-semibold text-black ${isSessionLoading ? "opacity-80" : ""}`}>
               Войти
             </Link>
           ) : (

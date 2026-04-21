@@ -1365,10 +1365,15 @@ export function listAnalyticsSummary() {
 export function getResortCompleteness(resort: ResortWithRelations | Resort) {
   const base = "images" in resort ? resort : enrichResort(resort);
   const missing: string[] = [];
+  if (!base.images.length || !base.images.some((image) => image.isCover || image.kind === "cover")) missing.push("cover-фото");
   if (base.images.length < 3) missing.push("минимум 3 фото");
+  if (!base.description.trim() || base.description.trim().length < 140) missing.push("полное описание без пустых мест");
   if (!base.includedText.trim()) missing.push("что включено в цену");
   if (!base.rulesText.trim()) missing.push("правила проживания");
   if (!base.beachLine.trim()) missing.push("описание берега");
+  if (!base.contactPhone.trim() || base.contactPhone.trim().length < 7) missing.push("рабочий телефон");
+  if (!base.whatsapp.trim() || base.whatsapp.trim().length < 7) missing.push("WhatsApp");
+  if (!base.address.trim()) missing.push("адрес");
   if (base.prices.length === 0) missing.push("ценовые пакеты");
   if (base.amenities.length < 3) missing.push("хотя бы 3 удобства");
   if (!base.shortDescription.trim() || base.shortDescription.trim().length < 60) missing.push("сильное краткое описание");

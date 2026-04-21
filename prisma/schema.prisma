@@ -22,8 +22,8 @@ enum ResortStatus {
 }
 
 enum ReviewStatus {
-  pending
-  approved
+  PENDING
+  APPROVED
 }
 
 model User {

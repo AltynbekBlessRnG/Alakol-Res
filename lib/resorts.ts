@@ -1,9 +1,29 @@
+import { unstable_cache } from "next/cache";
 import {
   getPublishedResortBySlugFromSupabase,
   listFeaturedResortsFromSupabase,
   listPublishedResortsFromSupabase,
+  type ResortQueryFilters,
   type ResortWithRelations
 } from "@/lib/supabase/resorts";
+
+const getCachedPublishedResorts = unstable_cache(
+  async (filters: ResortQueryFilters) => listPublishedResortsFromSupabase(filters),
+  ["public-published-resorts"],
+  { revalidate: 300, tags: ["public-resorts"] }
+);
+
+const getCachedFeaturedResorts = unstable_cache(
+  async () => listFeaturedResortsFromSupabase(),
+  ["public-featured-resorts"],
+  { revalidate: 300, tags: ["public-resorts"] }
+);
+
+const getCachedResortBySlug = unstable_cache(
+  async (slug: string) => getPublishedResortBySlugFromSupabase(slug),
+  ["public-resort-by-slug"],
+  { revalidate: 300, tags: ["public-resorts"] }
+);
 
 export type CatalogFilters = {
   zone?: string;
@@ -45,36 +65,29 @@ export function parseFilters(searchParams: Record<string, string | string[] | un
   };
 }
 
-function matchResort(resort: ResortWithRelations, filters: CatalogFilters) {
-  const amenities = resort.amenities.map((item) => item.label.toLowerCase());
-  const q = filters.q?.toLowerCase();
-
-  if (resort.status !== "PUBLISHED") return false;
-  if (filters.zone && resort.zone !== filters.zone) return false;
-  if (filters.minPrice && resort.minPrice < filters.minPrice) return false;
-  if (filters.maxPrice && resort.maxPrice > filters.maxPrice) return false;
-  if (filters.hasPool && !resort.hasPool) return false;
-  if (filters.hasWifi && !resort.hasWifi) return false;
-  if (filters.hasParking && !resort.hasParking) return false;
-  if (filters.hasKidsZone && !resort.hasKidsZone) return false;
-  if (filters.familyFriendly && !resort.familyFriendly) return false;
-  if (filters.youthFriendly && !resort.youthFriendly) return false;
-  if (q) {
-    const haystack = [resort.title, resort.shortDescription, resort.zone].join(" ").toLowerCase();
-    if (!haystack.includes(q) && !amenities.some((item) => item.includes(q))) return false;
-  }
-  return true;
-}
-
 export async function getCatalogResorts(filters: CatalogFilters): Promise<ResortWithRelations[]> {
-  const resorts = await listPublishedResortsFromSupabase();
-  return resorts.filter((resort) => matchResort(resort, filters));
+  try {
+    return await getCachedPublishedResorts(filters);
+  } catch (error) {
+    console.error("Failed to load catalog resorts", error);
+    return [];
+  }
 }
 
 export async function getFeaturedResorts(): Promise<ResortWithRelations[]> {
-  return listFeaturedResortsFromSupabase();
+  try {
+    return await getCachedFeaturedResorts();
+  } catch (error) {
+    console.error("Failed to load featured resorts", error);
+    return [];
+  }
 }
 
 export async function getResortBySlug(slug: string): Promise<ResortWithRelations | null> {
-  return getPublishedResortBySlugFromSupabase(slug);
+  try {
+    return await getCachedResortBySlug(slug);
+  } catch (error) {
+    console.error(`Failed to load resort by slug: ${slug}`, error);
+    return null;
+  }
 }

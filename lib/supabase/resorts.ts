@@ -1,9 +1,22 @@
-import type { ResortAmenity, ResortImage, ResortOwnerProfile, ResortPrice, ResortWithRelations, Review } from "@/lib/demo-data";
+import type { ResortImage, ResortAmenity, ResortPrice, ResortWithRelations, Review, ResortOwnerProfile } from "@/lib/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export type { ResortWithRelations } from "@/lib/demo-data";
+export type { ResortWithRelations } from "@/lib/types";
 
-type ResortRow = {
+export type ResortQueryFilters = {
+  zone?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  hasPool?: boolean;
+  hasWifi?: boolean;
+  hasParking?: boolean;
+  hasKidsZone?: boolean;
+  familyFriendly?: boolean;
+  youthFriendly?: boolean;
+  q?: string;
+};
+
+export type ResortRow = {
   id: string;
   owner_profile_id: string;
   title: string;
@@ -187,7 +200,83 @@ function withRating(resort: ResortWithRelations) {
   };
 }
 
-async function hydrateResorts(rows: ResortRow[]): Promise<ResortWithRelations[]> {
+function buildPublishedResortsQuery(filters: ResortQueryFilters = {}) {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return null;
+
+  let query = supabase
+    .from("resorts")
+    .select("*")
+    .eq("status", "PUBLISHED");
+
+  if (filters.zone) query = query.eq("zone", filters.zone);
+  if (typeof filters.minPrice === "number") query = query.gte("min_price", filters.minPrice);
+  if (typeof filters.maxPrice === "number") query = query.lte("max_price", filters.maxPrice);
+  if (filters.hasPool) query = query.eq("has_pool", true);
+  if (filters.hasWifi) query = query.eq("has_wifi", true);
+  if (filters.hasParking) query = query.eq("has_parking", true);
+  if (filters.hasKidsZone) query = query.eq("has_kids_zone", true);
+  if (filters.familyFriendly) query = query.eq("family_friendly", true);
+  if (filters.youthFriendly) query = query.eq("youth_friendly", true);
+  if (filters.q?.trim()) {
+    const safe = filters.q.trim().replace(/[%_]/g, "");
+    query = query.or(
+      `title.ilike.%${safe}%,short_description.ilike.%${safe}%,zone.ilike.%${safe}%,food_options.ilike.%${safe}%,accommodation_type.ilike.%${safe}%`
+    );
+  }
+
+  return query;
+}
+
+async function hydrateResortSummaries(rows: ResortRow[]): Promise<ResortWithRelations[]> {
+  if (!rows.length) return [];
+
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return [];
+
+  const resortIds = rows.map((row) => row.id);
+  const [{ data: images }, { data: amenities }, { data: reviews }] = await Promise.all([
+    supabase.from("resort_images").select("id,resort_id,url,alt,sort_order,kind").in("resort_id", resortIds).order("sort_order", { ascending: true }),
+    supabase.from("resort_amenities").select("id,resort_id,label").in("resort_id", resortIds),
+    supabase.from("reviews").select("resort_id,rating").in("resort_id", resortIds).eq("status", "approved")
+  ]);
+
+  const imageMap = new Map<string, ResortImage[]>();
+  (images as ResortImageRow[] | null | undefined)?.forEach((row) => {
+    const item = mapImage(row);
+    const existing = imageMap.get(item.resortId) ?? [];
+    imageMap.set(item.resortId, existing.length ? existing : [item]);
+  });
+
+  const amenityMap = new Map<string, ResortAmenity[]>();
+  (amenities as ResortAmenityRow[] | null | undefined)?.forEach((row) => {
+    const item = mapAmenity(row);
+    amenityMap.set(item.resortId, [...(amenityMap.get(item.resortId) ?? []), item]);
+  });
+
+  const reviewStats = new Map<string, { total: number; count: number }>();
+  ((reviews as Array<{ resort_id: string; rating: number }> | null | undefined) ?? []).forEach((row) => {
+    const current = reviewStats.get(row.resort_id) ?? { total: 0, count: 0 };
+    reviewStats.set(row.resort_id, { total: current.total + row.rating, count: current.count + 1 });
+  });
+
+  return rows.map((row) => {
+    const stats = reviewStats.get(row.id) ?? { total: 0, count: 0 };
+    const ratingAverage = stats.count ? Number((stats.total / stats.count).toFixed(1)) : 0;
+
+    return {
+      ...mapResort(row),
+      images: imageMap.get(row.id) ?? [],
+      amenities: amenityMap.get(row.id) ?? [],
+      prices: [],
+      reviews: [],
+      ratingAverage,
+      approvedReviewsCount: stats.count
+    };
+  });
+}
+
+export async function hydrateResortRows(rows: ResortRow[]): Promise<ResortWithRelations[]> {
   if (!rows.length) return [];
 
   const supabase = createSupabaseAdminClient();
@@ -245,41 +334,30 @@ async function hydrateResorts(rows: ResortRow[]): Promise<ResortWithRelations[]>
   );
 }
 
-export async function listPublishedResortsFromSupabase() {
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+export async function listPublishedResortsFromSupabase(filters: ResortQueryFilters = {}) {
+  const query = buildPublishedResortsQuery(filters);
+  if (!query) return [];
 
-  const { data, error } = await supabase
-    .from("resorts")
-    .select("*")
-    .eq("status", "PUBLISHED")
-    .order("is_featured", { ascending: false })
-    .order("min_price", { ascending: true });
+  const { data, error } = await query.order("is_featured", { ascending: false }).order("min_price", { ascending: true });
 
   if (error) {
     throw error;
   }
 
-  return hydrateResorts((data as ResortRow[]) ?? []);
+  return hydrateResortSummaries((data as ResortRow[]) ?? []);
 }
 
 export async function listFeaturedResortsFromSupabase() {
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  const query = buildPublishedResortsQuery();
+  if (!query) return [];
 
-  const { data, error } = await supabase
-    .from("resorts")
-    .select("*")
-    .eq("status", "PUBLISHED")
-    .eq("is_featured", true)
-    .order("min_price", { ascending: true })
-    .limit(6);
+  const { data, error } = await query.eq("is_featured", true).order("min_price", { ascending: true }).limit(6);
 
   if (error) {
     throw error;
   }
 
-  return hydrateResorts((data as ResortRow[]) ?? []);
+  return hydrateResortSummaries((data as ResortRow[]) ?? []);
 }
 
 export async function getPublishedResortBySlugFromSupabase(slug: string) {
@@ -299,6 +377,6 @@ export async function getPublishedResortBySlugFromSupabase(slug: string) {
 
   if (!data) return null;
 
-  const resorts = await hydrateResorts([data as ResortRow]);
+  const resorts = await hydrateResortRows([data as ResortRow]);
   return resorts[0] ?? null;
 }

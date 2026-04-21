@@ -113,3 +113,12 @@ textarea:focus-visible {
     transform: rotate(360deg);
   }
 }
+
+@keyframes alakol-loading {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}

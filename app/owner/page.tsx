@@ -16,12 +16,15 @@ export default async function OwnerDashboardPage({
 }) {
   const session = await requireRole("OWNER");
   const params = await searchParams;
-  const resorts = await listOwnerResortsFromSupabase(session.user.ownerProfileId!);
-  const leads = await listOwnerLeadsFromSupabase(session.user.ownerProfileId!, {
+  const filters = {
     status: (Array.isArray(params.status) ? params.status[0] : params.status) as "all" | "new" | "contacted" | "no_answer" | "booked" | "closed" | undefined,
     q: Array.isArray(params.q) ? params.q[0] : params.q
-  });
-  const notifications = await listNotificationsFromSupabase(session.user.id, 6);
+  };
+  const [resorts, leads, notifications] = await Promise.all([
+    listOwnerResortsFromSupabase(session.user.ownerProfileId!),
+    listOwnerLeadsFromSupabase(session.user.ownerProfileId!, filters),
+    listNotificationsFromSupabase(session.user.id, 6)
+  ]);
 
   return (
     <main className="min-h-screen bg-mist px-5 py-10 md:px-8">

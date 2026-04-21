@@ -19,8 +19,6 @@ export function CompareLink({ mobile = false }: { mobile?: boolean }) {
     };
   }, []);
 
-  if (!count) return null;
-
   return (
     <Link
       href="/compare"
@@ -31,7 +29,7 @@ export function CompareLink({ mobile = false }: { mobile?: boolean }) {
       }
     >
       <Scale size={mobile ? 14 : 16} />
-      {mobile ? `${count}` : `Сравнение · ${count}`}
+      {mobile ? (count ? `Сравн. ${count}` : "Сравнить") : count ? `Сравнение · ${count}` : "Сравнить"}
     </Link>
   );
 }

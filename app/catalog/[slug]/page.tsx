@@ -13,6 +13,8 @@ import { getResortBySlug } from "@/lib/resorts";
 import { absoluteUrl, siteName } from "@/lib/seo";
 import { formatPrice } from "@/lib/utils";
 
+export const revalidate = 300;
+
 type ResortDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
@@ -48,11 +50,18 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
   const resort = await getResortBySlug(slug);
 
   if (!resort) notFound();
+  const idealForText = resort.familyFriendly && resort.youthFriendly
+    ? "семьи, пары и компания друзей"
+    : resort.familyFriendly
+      ? "семьи и спокойный отдых"
+      : resort.youthFriendly
+        ? "компанию друзей и более живой формат"
+        : "пары и спокойный отдых";
   const summaryCards = [
-    { label: "Формат", value: resort.accommodationType },
+    { label: "Кому подойдёт", value: idealForText },
+    { label: "До воды", value: `${resort.distanceToLakeM} м до берега` },
     { label: "Берег", value: resort.beachLine },
-    { label: "Отзывы", value: resort.approvedReviewsCount ? `${resort.ratingAverage} / 5` : "Новая карточка" },
-    { label: "Трансфер", value: resort.transferInfo }
+    { label: "Что по цене", value: `от ${formatPrice(resort.minPrice)} ₸ за базовый вариант` }
   ].filter((item) => item.value?.trim());
   const detailFacts = [
     { label: "Что включено", value: resort.includedText },
@@ -63,22 +72,22 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
   const spotlightCards = [
     {
       icon: ShieldCheck,
-      title: "Проверено",
-      text: "Карточка прошла модерацию и собрана без лишнего шума."
+      title: "Проверенная карточка",
+      text: "Основные данные собраны в одном месте: цена, берег, правила и контакты."
     },
     ...(resort.includedText.trim()
       ? [
           {
             icon: Waves,
-            title: "Что включено",
+            title: "Что уже включено",
             text: resort.includedText
           }
         ]
       : []),
     {
       icon: Sparkles,
-      title: "Лучше всего подходит",
-      text: `${resort.familyFriendly ? "Семейный формат" : "Пара и спокойный отдых"}${resort.youthFriendly ? ", компания друзей" : ""}`
+      title: "Лучше всего подойдёт",
+      text: `Этот объект рассчитан на ${idealForText}.`
     },
     {
       icon: Star,
@@ -203,17 +212,17 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
 
       <section className="mx-auto max-w-7xl px-5 py-10 md:px-8">
         <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="space-y-8">
+          <div className="order-2 space-y-8 lg:order-1">
             <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
               <div className="flex items-center gap-2 text-sm text-pine">
                 <BadgeCheck size={16} />
                 Проверенная карточка
               </div>
-              <h2 className="mt-5 font-display text-4xl text-ink">О зоне отдыха</h2>
+              <h2 className="mt-5 font-display text-4xl text-ink">Коротко о месте</h2>
               <p className="mt-5 max-w-3xl text-base leading-8 text-black/72">{resort.description}</p>
             </div>
 
-            <ResortGallery images={resort.images.slice(1)} />
+            <ResortGallery images={resort.images} />
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
@@ -227,7 +236,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
                 </div>
               </div>
               <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-                <h2 className="font-display text-3xl text-ink">Проверенная информация</h2>
+                <h2 className="font-display text-3xl text-ink">Что важно знать заранее</h2>
                 {detailFacts.length ? (
                   <div className="mt-5 space-y-4 text-sm leading-7 text-black/68">
                     {detailFacts.map((item) => (
@@ -278,11 +287,17 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
             </div>
           </div>
 
-          <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+          <div className="order-1 space-y-6 lg:sticky lg:top-6 lg:order-2 lg:self-start">
             <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-              <p className="text-xs uppercase tracking-[0.2em] text-black/45">Быстрый контакт</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-black/45">Главное по объекту</p>
               <p className="mt-3 font-display text-4xl text-ink">от {formatPrice(resort.minPrice)} ₸</p>
               <p className="mt-2 text-sm text-black/58">за базовый вариант размещения</p>
+              <div className="mt-5 grid gap-3 rounded-[1.5rem] bg-[#f7f1e6] p-4 text-sm leading-6 text-black/64">
+                <p><strong>Подойдёт:</strong> {idealForText}</p>
+                <p><strong>До воды:</strong> {resort.distanceToLakeM} м</p>
+                <p><strong>Формат:</strong> {resort.accommodationType}</p>
+                {resort.approvedReviewsCount > 0 && <p><strong>Отзывы:</strong> {resort.ratingAverage} / 5 по {resort.approvedReviewsCount} отзывам</p>}
+              </div>
               <div className="mt-5 flex flex-wrap gap-3">
                 <a href={`tel:${resort.contactPhone}`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-pine px-4 py-3 text-sm font-medium text-white">
                   <PhoneCall size={16} />
@@ -296,7 +311,16 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
             </div>
 
             <LeadForm resortId={resort.id} id="lead-form" />
-            <ReviewForm resortId={resort.id} returnTo={`/catalog/${resort.slug}`} />
+            <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+              <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>
+              <h3 className="mt-3 font-display text-3xl text-ink">Поделиться впечатлением после отдыха</h3>
+              <p className="mt-3 text-sm leading-6 text-black/60">
+                Отзывы помогают следующим гостям быстрее понять атмосферу, берег и качество сервиса. Новый отзыв сначала уходит на модерацию.
+              </p>
+              <div className="mt-5">
+                <ReviewForm resortId={resort.id} returnTo={`/catalog/${resort.slug}`} embedded />
+              </div>
+            </div>
           </div>
         </div>
       </section>

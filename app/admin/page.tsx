@@ -17,12 +17,15 @@ export const metadata: Metadata = noIndexMetadata("Админка", "Служе�
 
 export default async function AdminPage() {
   const session = await requireRole("ADMIN");
-  const pending = await listPendingResortsFromSupabase();
-  const audit = await listAuditFromSupabase(8);
-  const analytics = await listAnalyticsSummaryFromSupabase();
-  const incomplete = (await listIncompleteResortsFromSupabase()).slice(0, 6);
-  const pendingReviews = await listPendingReviewsFromSupabase();
-  const notifications = await listNotificationsFromSupabase(session.user.id, 6);
+  const [pending, audit, analytics, incompleteRows, pendingReviews, notifications] = await Promise.all([
+    listPendingResortsFromSupabase(),
+    listAuditFromSupabase(8),
+    listAnalyticsSummaryFromSupabase(),
+    listIncompleteResortsFromSupabase(),
+    listPendingReviewsFromSupabase(),
+    listNotificationsFromSupabase(session.user.id, 6)
+  ]);
+  const incomplete = incompleteRows.slice(0, 6);
 
   return (
     <main className="min-h-screen bg-mist px-5 py-10 md:px-8">

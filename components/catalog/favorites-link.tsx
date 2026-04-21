@@ -39,8 +39,6 @@ export function FavoritesLink({ mobile = false }: { mobile?: boolean }) {
     };
   }, [session?.user.role, status]);
 
-  if (!count) return null;
-
   return (
     <Link
       href="/favorites"
@@ -51,7 +49,7 @@ export function FavoritesLink({ mobile = false }: { mobile?: boolean }) {
       }
     >
       <Heart size={mobile ? 14 : 16} />
-      {mobile ? `${count}` : `Избранное · ${count}`}
+      {mobile ? (count ? `Избр. ${count}` : "Избранное") : count ? `Избранное · ${count}` : "Избранное"}
     </Link>
   );
 }

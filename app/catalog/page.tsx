@@ -2,12 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EventTracker } from "@/components/analytics/event-tracker";
 import { CatalogFiltersPanel } from "@/components/catalog/catalog-filters";
+import { CompareLink } from "@/components/catalog/compare-link";
+import { FavoritesLink } from "@/components/catalog/favorites-link";
 import { LakeMap } from "@/components/catalog/lake-map";
 import { MobileFilters } from "@/components/catalog/mobile-filters";
+import { MobileMapPanel } from "@/components/catalog/mobile-map-panel";
 import { QuickPicks } from "@/components/catalog/quick-picks";
 import { ResortCard } from "@/components/catalog/resort-card";
 import { parseFilters, getCatalogResorts } from "@/lib/resorts";
 import { absoluteUrl, siteKeywords, siteName } from "@/lib/seo";
+
+export const revalidate = 300;
 
 type CatalogPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -105,14 +110,23 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[360px_1fr] md:px-8">
+        <div className="lg:col-span-2">
+          <QuickPicks />
+        </div>
         <div className="space-y-6">
           <div className="lg:hidden">
             <MobileFilters filters={filters} resultCount={resorts.length} />
           </div>
+          <div className="flex gap-3 lg:hidden">
+            <FavoritesLink mobile />
+            <CompareLink mobile />
+          </div>
           <div className="hidden lg:block">
             <CatalogFiltersPanel filters={filters} />
           </div>
-          <LakeMap resorts={resorts} />
+          <div className="hidden lg:block">
+            <LakeMap resorts={resorts} />
+          </div>
         </div>
         <div>
           <div className="mb-5 flex items-center justify-between gap-4">
@@ -134,11 +148,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
               </Link>
             </div>
           )}
-        </div>
-      </section>
 
-      <section className="mx-auto max-w-7xl px-5 pb-12 md:px-8">
-        <QuickPicks />
+          <div className="mt-8 lg:hidden">
+            <MobileMapPanel resorts={resorts} />
+          </div>
+        </div>
       </section>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/8 bg-[rgba(247,241,230,0.94)] p-4 backdrop-blur md:hidden">

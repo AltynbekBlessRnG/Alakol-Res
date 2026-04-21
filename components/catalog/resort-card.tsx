@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Star, Waves, Wifi } from "lucide-react";
 import { PublicActions } from "@/components/catalog/public-actions";
-import { ResortAmenity, ResortImage, ResortWithRelations } from "@/lib/demo-data";
+import type { ResortAmenity, ResortImage, ResortWithRelations } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
 type ResortCardProps = {
@@ -34,9 +34,6 @@ export function ResortCard({ resort }: ResortCardProps) {
           <div className="rounded-full bg-white/12 px-4 py-2 text-sm backdrop-blur-sm transition duration-300 group-hover:bg-white/18 group-hover:-translate-y-1">
             от {formatPrice(resort.minPrice)} ₸
           </div>
-        </div>
-        <div className="absolute right-4 top-4 z-20">
-          <PublicActions slug={resort.slug} title={resort.title} compact />
         </div>
       </div>
       <div className="relative z-20 space-y-4 p-6">
@@ -71,8 +68,11 @@ export function ResortCard({ resort }: ResortCardProps) {
             </span>
           )}
         </div>
-        <div className="pt-2 text-sm font-medium text-pine transition duration-300 group-hover:translate-x-2">
-          Открыть карточку
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/8 pt-4">
+          <div className="text-sm font-medium text-pine transition duration-300 group-hover:translate-x-2">
+            Открыть карточку
+          </div>
+          <PublicActions slug={resort.slug} title={resort.title} compact />
         </div>
       </div>
     </article>
