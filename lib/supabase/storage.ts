@@ -30,8 +30,15 @@ export async function uploadResortImagesToSupabaseStorage(resortId: string, file
       throw error;
     }
 
-    const { data } = supabase.storage.from(storageBucket).getPublicUrl(fileName);
-    uploadedUrls.push(data.publicUrl);
+    const { data: signedData, error: signedError } = await supabase.storage.from(storageBucket).createSignedUrl(fileName, 60 * 60 * 24 * 365);
+
+    if (signedError || !signedData?.signedUrl) {
+      const { data } = supabase.storage.from(storageBucket).getPublicUrl(fileName);
+      uploadedUrls.push(data.publicUrl);
+      continue;
+    }
+
+    uploadedUrls.push(signedData.signedUrl);
   }
 
   return uploadedUrls;

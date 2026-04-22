@@ -1,5 +1,6 @@
 import { submitResortForReviewAction, updateResortAction } from "@/lib/actions";
 import { ImageUploadPanel } from "@/components/forms/image-upload-panel";
+import { TextareaWithCounter } from "@/components/forms/textarea-with-counter";
 import { Input, Textarea } from "@/components/ui/input";
 import { getResortCompleteness } from "@/lib/supabase/data";
 import { RESORT_STATUS, type Resort, type ResortAmenity, type ResortImage, type ResortPrice, type ResortStatus } from "@/lib/types";
@@ -8,8 +9,58 @@ type OwnerResortFormProps = {
   resort: Resort & { amenities: ResortAmenity[]; prices: ResortPrice[]; images: ResortImage[] };
 };
 
+const ZONE_OPTIONS = ["Акши", "Коктума", "Кабанбай", "Урджар", "Лепсы"];
+const FOOD_OPTIONS = [
+  "Без питания",
+  "Завтрак включён",
+  "Завтрак и ужин",
+  "Полный пансион",
+  "Кафе на территории",
+  "Ресторан и авторское меню"
+];
+const ACCOMMODATION_OPTIONS = [
+  "Стандартные номера",
+  "Семейные номера",
+  "Коттеджи",
+  "Домики у воды",
+  "Boutique resort",
+  "Глэмпинг",
+  "Апартаменты"
+];
+const BEACH_OPTIONS = [
+  "Первая линия, свой выход к воде",
+  "Галечно-песчаный берег, 2 минуты пешком",
+  "Песчаный пляж, 5 минут пешком",
+  "Берег через прогулочную зону",
+  "Тихий берег, подходит для спокойного отдыха"
+];
+const TRANSFER_OPTIONS = [
+  "Трансфер не предоставляется",
+  "Трансфер по предварительной заявке",
+  "Встреча с ЖД вокзала",
+  "Трансфер из аэропорта",
+  "Помогаем организовать трансфер через партнёров"
+];
+const AMENITY_OPTIONS = [
+  "Wi-Fi",
+  "Парковка",
+  "Бассейн",
+  "Детская зона",
+  "BBQ",
+  "Террасы",
+  "Пляжные лежаки",
+  "Кафе",
+  "Ресторан",
+  "Сауна",
+  "Беседки",
+  "Анимация",
+  "Охраняемая территория",
+  "Прачечная"
+];
+
 export function OwnerResortForm({ resort }: OwnerResortFormProps) {
   const completeness = getResortCompleteness(resort);
+  const selectedAmenities = new Set(resort.amenities.map((item) => item.label));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -22,15 +73,21 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Короткое описание</label>
-            <Textarea name="shortDescription" defaultValue={resort.shortDescription} className="min-h-[90px]" />
+            <TextareaWithCounter name="shortDescription" defaultValue={resort.shortDescription} minLength={45} className="min-h-[90px]" />
+            <p className="mt-2 text-xs leading-5 text-black/45">
+              Коротко и по делу: кому подходит место, чем оно привлекает, что там за атмосфера. Желательно от 45 символов.
+            </p>
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Полное описание</label>
-            <Textarea name="description" defaultValue={resort.description} />
+            <TextareaWithCounter name="description" defaultValue={resort.description} minLength={110} />
+            <p className="mt-2 text-xs leading-5 text-black/45">
+              Опишите формат отдыха, расстояние до воды, кому подойдёт место, что есть на территории и чем оно отличается. Желательно от 110 символов.
+            </p>
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Зона</label>
-            <Input name="zone" defaultValue={resort.zone} />
+            <Select name="zone" defaultValue={resort.zone} options={ZONE_OPTIONS} />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Адрес</label>
@@ -46,11 +103,11 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Питание</label>
-            <Input name="foodOptions" defaultValue={resort.foodOptions} />
+            <Select name="foodOptions" defaultValue={resort.foodOptions} options={FOOD_OPTIONS} />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Тип размещения</label>
-            <Input name="accommodationType" defaultValue={resort.accommodationType} />
+            <Select name="accommodationType" defaultValue={resort.accommodationType} options={ACCOMMODATION_OPTIONS} />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Телефон</label>
@@ -81,8 +138,16 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
             <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="hasKidsZone" defaultChecked={resort.hasKidsZone} />Детская зона</label>
           </div>
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-black/55">Удобства через запятую</label>
-            <Input name="amenities" defaultValue={resort.amenities.map((item) => item.label).join(", ")} />
+            <label className="mb-2 block text-sm text-black/55">Удобства</label>
+            <div className="grid gap-3 rounded-[1.5rem] bg-mist p-4 sm:grid-cols-2">
+              {AMENITY_OPTIONS.map((option) => (
+                <label key={option} className="flex items-center gap-3 text-sm text-ink">
+                  <input type="checkbox" name="amenities" value={option} defaultChecked={selectedAmenities.has(option)} />
+                  {option}
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs leading-5 text-black/45">Отметьте только то, что реально есть на территории или в номерах.</p>
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Что включено в цену</label>
@@ -94,20 +159,11 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Берег и пляж</label>
-            <Input name="beachLine" defaultValue={resort.beachLine} />
+            <Select name="beachLine" defaultValue={resort.beachLine} options={BEACH_OPTIONS} />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Трансфер</label>
-            <Input name="transferInfo" defaultValue={resort.transferInfo} />
-          </div>
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-black/55">Фото URL через запятую</label>
-            <Textarea
-              name="images"
-              defaultValue={resort.images.map((item) => item.url).join(", ")}
-              className="min-h-[90px]"
-              placeholder="Первое изображение станет cover-фото. Можно оставить пустым и пользоваться загрузкой файлов справа."
-            />
+            <Select name="transferInfo" defaultValue={resort.transferInfo} options={TRANSFER_OPTIONS} />
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Цены по строкам</label>
@@ -115,9 +171,15 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
               name="prices"
               defaultValue={resort.prices.map((price) => `${price.label} | ${price.amount} | ${price.description}`).join("\n")}
               className="min-h-[110px]"
-              placeholder={"Стандарт | 28000 | за номер в сутки\nСемейный люкс | 52000 | за номер в сутки"}
+              placeholder={"Стандарт | 28000\nСемейный люкс | 52000 | за номер в сутки\nДомик | 45000"}
             />
-            <p className="mt-2 text-xs leading-5 text-black/45">Формат: название | цена | описание. Минимум одна строка обязателен для публикации.</p>
+            <p className="mt-2 text-xs leading-5 text-black/45">
+              Можно писать проще: <strong>название | цена</strong>. Описание необязательно, мы подставим его сами. Также поддерживаются форматы через
+              <strong> ; </strong>или <strong> - </strong>.
+            </p>
+          </div>
+          <div className="md:col-span-2 rounded-[1.5rem] bg-mist px-4 py-4 text-sm leading-6 text-black/65">
+            Фото теперь лучше загружать через блок справа. После загрузки они сохраняются автоматически и не требуют ручного ввода URL.
           </div>
         </div>
         <button className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">Сохранить изменения</button>
@@ -175,4 +237,20 @@ function labelForStatus(status: ResortStatus) {
     case "REJECTED":
       return "Требует доработки";
   }
+}
+
+function Select({ name, defaultValue, options }: { name: string; defaultValue?: string; options: string[] }) {
+  return (
+    <select
+      name={name}
+      defaultValue={defaultValue}
+      className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-lake focus:ring-2 focus:ring-lake/20"
+    >
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
 }

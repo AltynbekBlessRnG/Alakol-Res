@@ -39,14 +39,23 @@ function parsePriceRows(value: string) {
     .map((row) => row.trim())
     .filter(Boolean)
     .map((row) => {
-      const [label = "", amount = "", description = ""] = row.split("|").map((item) => item.trim());
+      const parts = row.includes("|")
+        ? row.split("|").map((item) => item.trim())
+        : row.includes(";")
+          ? row.split(";").map((item) => item.trim())
+          : row.includes(" - ")
+            ? row.split(" - ").map((item) => item.trim())
+            : row.split(",").map((item) => item.trim());
+      const [label = "", rawAmount = "", rawDescription = ""] = parts;
+      const amount = rawAmount.replace(/[^\d]/g, "");
+      const description = rawDescription || "за номер в сутки";
       return {
         label,
         amount: Number(amount),
         description
       };
     })
-    .filter((item) => item.label && Number.isFinite(item.amount) && item.amount > 0 && item.description);
+    .filter((item) => item.label && Number.isFinite(item.amount) && item.amount > 0);
 }
 
 export type ActionResult = { success: true } | { success: false; error: string };
@@ -96,9 +105,9 @@ export async function updateResortAction(formData: FormData) {
 
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) return;
 
-  const amenities = String(formData.get("amenities") || "")
-    .split(",")
-    .map((item) => item.trim())
+  const amenities = formData
+    .getAll("amenities")
+    .map((item) => String(item).trim())
     .filter(Boolean);
   const images = String(formData.get("images") || "")
     .split(",")
