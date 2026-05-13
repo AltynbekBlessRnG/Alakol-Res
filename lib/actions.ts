@@ -5,6 +5,16 @@ import { redirect } from "next/navigation";
 import type { ResortStatus } from "@/lib/types";
 import { getResortCompleteness } from "@/lib/supabase/data";
 import { requireRole } from "@/lib/session";
+import { notifyLeadToTelegram } from "@/lib/telegram";
+import {
+  leadSchema,
+  moderationReviewSchema,
+  ownerLeadUpdateSchema,
+  ownerResortFormSchema,
+  passwordResetRequestSchema,
+  resetPasswordSchema,
+  reviewSchema
+} from "@/lib/validation";
 import {
   addModerationReviewInSupabase,
   appendResortImagesInSupabase,
@@ -62,14 +72,11 @@ export type ActionResult = { success: true } | { success: false; error: string }
 
 export async function createLeadAction(formData: FormData): Promise<ActionResult> {
   try {
-    const resortId = String(formData.get("resortId") || "");
-    const guestName = String(formData.get("guestName") || "");
-    const phone = String(formData.get("phone") || "");
-    const note = String(formData.get("note") || "");
-
-    if (!resortId || !guestName || !phone) {
+    const parsed = leadSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) {
       return { success: false, error: "Заполните обязательные поля" };
     }
+    const { resortId, guestName, phone, note } = parsed.data;
 
     const leadId = await createLeadInSupabase({ resortId, guestName, phone, note, source: "site_form" });
     if (!leadId) {
@@ -90,6 +97,14 @@ export async function createLeadAction(formData: FormData): Promise<ActionResult
       await createAnalyticsEventInSupabase({ eventType: "lead_created", resortId, slug: resort.slug, metadata: JSON.stringify({ leadId }) });
     }
 
+    await notifyLeadToTelegram({
+      leadId,
+      resortTitle: resort?.title,
+      guestName,
+      phone,
+      note
+    });
+
     redirect(`/catalog?lead=success`);
     return { success: true };
   } catch (error) {
@@ -100,7 +115,10 @@ export async function createLeadAction(formData: FormData): Promise<ActionResult
 
 export async function updateResortAction(formData: FormData) {
   const session = await requireRole("OWNER");
-  const id = String(formData.get("id") || "");
+  const parsed = ownerResortFormSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return;
+  const values = parsed.data;
+  const id = values.id;
   const resort = await getResortByIdFromSupabase(id);
 
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) return;
@@ -122,31 +140,31 @@ export async function updateResortAction(formData: FormData) {
 
   await updateResortRecordInSupabase(id, {
     ...resort,
-    title: String(formData.get("title") || resort.title),
-    slug: slugify(String(formData.get("title") || resort.title), resort.id),
-    shortDescription: String(formData.get("shortDescription") || resort.shortDescription),
-    description: String(formData.get("description") || resort.description),
-    zone: String(formData.get("zone") || resort.zone),
-    address: String(formData.get("address") || resort.address),
-    minPrice: Number(formData.get("minPrice") || resort.minPrice),
-    maxPrice: Number(formData.get("maxPrice") || resort.maxPrice),
-    foodOptions: String(formData.get("foodOptions") || resort.foodOptions),
-    accommodationType: String(formData.get("accommodationType") || resort.accommodationType),
-    contactPhone: String(formData.get("contactPhone") || resort.contactPhone),
-    whatsapp: String(formData.get("whatsapp") || resort.whatsapp),
-    latitude: Number(formData.get("latitude") || resort.latitude),
-    longitude: Number(formData.get("longitude") || resort.longitude),
-    distanceToLakeM: Number(formData.get("distanceToLakeM") || resort.distanceToLakeM),
+    title: values.title,
+    slug: slugify(values.title, resort.id),
+    shortDescription: values.shortDescription,
+    description: values.description,
+    zone: values.zone,
+    address: values.address,
+    minPrice: values.minPrice,
+    maxPrice: values.maxPrice,
+    foodOptions: values.foodOptions,
+    accommodationType: values.accommodationType,
+    contactPhone: values.contactPhone,
+    whatsapp: values.whatsapp,
+    latitude: values.latitude,
+    longitude: values.longitude,
+    distanceToLakeM: values.distanceToLakeM,
     familyFriendly: toBool(formData.get("familyFriendly")),
     youthFriendly: toBool(formData.get("youthFriendly")),
     hasPool: toBool(formData.get("hasPool")),
     hasWifi: toBool(formData.get("hasWifi")),
     hasParking: toBool(formData.get("hasParking")),
     hasKidsZone: toBool(formData.get("hasKidsZone")),
-    includedText: String(formData.get("includedText") || resort.includedText),
-    rulesText: String(formData.get("rulesText") || resort.rulesText),
-    beachLine: String(formData.get("beachLine") || resort.beachLine),
-    transferInfo: String(formData.get("transferInfo") || resort.transferInfo),
+    includedText: values.includedText ?? "",
+    rulesText: values.rulesText ?? "",
+    beachLine: values.beachLine ?? "",
+    transferInfo: values.transferInfo ?? "",
     status: "DRAFT" as ResortStatus,
     updatedAt: new Date()
   });
@@ -266,8 +284,9 @@ export async function appendUploadedImagesAction(resortId: string, urls: string[
 export async function updateLeadAction(formData: FormData) {
   const session = await requireRole("OWNER");
   const id = String(formData.get("id") || "");
-  const status = String(formData.get("status") || "new") as "new" | "contacted" | "no_answer" | "booked" | "closed";
-  const ownerComment = String(formData.get("ownerComment") || "");
+  const parsed = ownerLeadUpdateSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return;
+  const { status, ownerComment } = parsed.data;
   const lead = (await listOwnerLeadsFromSupabase(session.user.ownerProfileId!)).find((item) => item.id === id);
   if (!lead) return;
   await updateLeadInSupabase(id, { status, ownerComment });
@@ -287,14 +306,13 @@ export async function toggleFeaturedAction(formData: FormData) {
 export async function createReviewAction(formData: FormData): Promise<ActionResult> {
   try {
     const session = await requireRole("USER");
-    const resortId = String(formData.get("resortId") || "");
     const returnTo = String(formData.get("returnTo") || "/favorites");
-    const body = String(formData.get("body") || "");
-    const rating = Number(formData.get("rating") || 0);
-    const authorName = session.user.name?.trim() || "Гость";
-    if (!resortId || !body || rating < 1 || rating > 5) {
+    const parsed = reviewSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) {
       return { success: false, error: "Заполните все поля отзыва" };
     }
+    const { resortId, body, rating } = parsed.data;
+    const authorName = session.user.name?.trim() || "Гость";
     await createReviewInSupabase({ resortId, authorName, body, rating, userId: session.user.id });
     const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
     if (admin) {
@@ -316,16 +334,18 @@ export async function createReviewAction(formData: FormData): Promise<ActionResu
 
 export async function moderateReviewAction(formData: FormData) {
   await requireRole("ADMIN");
-  const id = String(formData.get("id") || "");
-  const status = String(formData.get("status") || "pending") as "approved" | "pending";
+  const parsed = moderationReviewSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return;
+  const { id, status } = parsed.data;
   await moderateReviewInSupabase(id, status);
   revalidatePath("/admin");
   revalidatePath("/catalog");
 }
 
 export async function requestPasswordResetAction(formData: FormData) {
-  const email = String(formData.get("email") || "");
-  if (!email) return;
+  const parsed = passwordResetRequestSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return;
+  const { email } = parsed.data;
   const token = await createPasswordResetTokenInSupabase(email);
   const user = await getUserByEmailFromSupabase(email);
   if (token && user) {
@@ -342,8 +362,11 @@ export async function requestPasswordResetAction(formData: FormData) {
 
 export async function resetPasswordAction(formData: FormData) {
   try {
-    const token = String(formData.get("token") || "");
-    const password = String(formData.get("password") || "");
+    const parsed = resetPasswordSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) {
+      redirect("/reset-password?error=1");
+    }
+    const { token, password } = parsed.data;
     const reset = await getValidPasswordResetTokenFromSupabase(token);
     if (!reset || password.length < 8) {
       redirect("/reset-password?error=1");

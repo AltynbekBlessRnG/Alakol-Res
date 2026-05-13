@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { appendResortImagesInSupabase, getResortByIdFromSupabase } from "@/lib/supabase/data";
 import { uploadResortImagesToSupabaseStorage } from "@/lib/supabase/storage";
+import { resortUploadSchema } from "@/lib/validation";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES_PER_REQUEST = 10;
@@ -79,11 +80,11 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
-    const resortId = String(formData.get("resortId") || "").trim();
-
-    if (!resortId || !/^[a-zA-Z0-9_-]+$/.test(resortId)) {
+    const parsed = resortUploadSchema.safeParse({ resortId: formData.get("resortId") });
+    if (!parsed.success) {
       return NextResponse.json({ message: "Invalid resortId" }, { status: 400 });
     }
+    const { resortId } = parsed.data;
 
     const files = formData.getAll("photos").filter((file): file is File => file instanceof File && file.size > 0);
 

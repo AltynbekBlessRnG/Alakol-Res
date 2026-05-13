@@ -8,7 +8,7 @@ const CatalogMapClient = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[320px] items-center justify-center rounded-[2rem] bg-[#d9efe9] text-sm text-pine md:h-[420px]">
+      <div className="flex h-[320px] items-center justify-center rounded-[1.25rem] bg-[#d9efe9] text-sm text-pine md:h-[460px]">
         Загружаем карту...
       </div>
     )
@@ -17,21 +17,23 @@ const CatalogMapClient = dynamic(
 
 type LakeMapProps = {
   resorts: Pick<Resort, "id" | "slug" | "title" | "zone" | "latitude" | "longitude" | "minPrice">[];
+  apiKey?: string;
 };
 
-export function LakeMap({ resorts }: LakeMapProps) {
+export function LakeMap({ resorts, apiKey }: LakeMapProps) {
   return (
-    <div className="overflow-hidden rounded-[2rem] bg-white p-4 shadow-[0_18px_70px_rgba(14,26,31,0.08)] md:p-6">
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div className="overflow-hidden rounded-[1.5rem] bg-white p-3 shadow-[0_18px_70px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-5">
+      <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-pine/55">Lake view</p>
-          <h3 className="font-display text-3xl text-pine">Карта береговой линии</h3>
+          <p className="text-xs uppercase tracking-[0.2em] text-pine/55">Google Maps</p>
+          <h3 className="font-display text-3xl text-pine">Карта объектов</h3>
         </div>
-        <p className="max-w-xs text-sm text-pine/70">
-          Реальная интерактивная карта с маркерами объектов. На телефоне она остаётся ниже фильтров, чтобы не ломать сценарий выбора.
-        </p>
+        <p className="hidden text-sm text-pine/65 md:block">{resorts.length} точек</p>
       </div>
-      <CatalogMapClient resorts={resorts} />
+      <div className="overflow-hidden rounded-[1.25rem] border border-black/8">
+        <CatalogMapClient resorts={resorts} apiKey={apiKey} />
+      </div>
     </div>
   );
 }
+

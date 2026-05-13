@@ -1,6 +1,5 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import {
   addModerationReviewInSupabase,
@@ -10,18 +9,7 @@ import {
   setResortFeaturedInSupabase,
   updateResortRecordInSupabase
 } from "@/lib/supabase/data";
-
-const schema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("featured"),
-    featured: z.boolean()
-  }),
-  z.object({
-    type: z.literal("moderation"),
-    action: z.enum(["publish", "reject"]),
-    comment: z.string().optional()
-  })
-]);
+import { adminResortActionSchema } from "@/lib/validation";
 
 export async function POST(
   request: Request,
@@ -33,7 +21,11 @@ export async function POST(
   }
 
   const { id } = await params;
-  const body = schema.parse(await request.json());
+  const parsed = adminResortActionSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
+  }
+  const body = parsed.data;
 
   if (body.type === "featured") {
     await setResortFeaturedInSupabase(id, body.featured);

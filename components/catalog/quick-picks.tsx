@@ -1,68 +1,41 @@
 import Link from "next/link";
 
 const picks = [
-  {
-    href: "/catalog?familyFriendly=true",
-    title: "Для семьи",
-    description: "Спокойный формат, детские условия и более понятный сценарий отдыха с детьми."
-  },
-  {
-    href: "/catalog?hasPool=true",
-    title: "С бассейном",
-    description: "Если бассейн на территории так же важен, как и сам берег."
-  },
-  {
-    href: "/catalog?maxPrice=30000",
-    title: "До 30 000 ₸",
-    description: "Быстрый вход в более доступный ценовой диапазон без ручной сборки фильтров."
-  },
-  {
-    href: "/catalog?youthFriendly=true",
-    title: "Для компании",
-    description: "Более динамичные объекты для друзей, террас и живой атмосферы."
-  },
-  {
-    href: "/catalog?zone=%D0%90%D0%BA%D1%88%D0%B8",
-    title: "Только Акши",
-    description: "Если вы уже знаете нужную часть Алаколя и хотите сузить выбор по локации."
-  },
-  {
-    href: "/first-line-alakol",
-    title: "Ближе к воде",
-    description: "Подборка для тех, кто хочет сократить путь до берега и сразу видеть первую линию."
-  },
-  {
-    href: "/catalog?zone=%D0%9A%D0%BE%D0%BA%D1%82%D1%83%D0%BC%D0%B0",
-    title: "Только Коктума",
-    description: "Если нужен более спокойный восточный сценарий отдыха и отдельная география."
-  },
-  {
-    href: "/catalog?minPrice=40000",
-    title: "Премиальнее",
-    description: "Подборка для тех, кому важны более сильные фото, сервис и дорогой формат."
-  }
+  { href: "/catalog?familyFriendly=true", title: "Для семьи", short: "детям удобно" },
+  { href: "/catalog?hasPool=true", title: "С бассейном", short: "вода рядом" },
+  { href: "/catalog?maxPrice=30000", title: "До 30 000 ₸", short: "доступнее" },
+  { href: "/catalog?youthFriendly=true", title: "Для компании", short: "живее формат" },
+  { href: "/catalog?zone=%D0%90%D0%BA%D1%88%D0%B8", title: "Акши", short: "популярная зона" },
+  { href: "/first-line-alakol", title: "Ближе к воде", short: "первая линия" },
+  { href: "/catalog?zone=%D0%9A%D0%BE%D0%BA%D1%82%D1%83%D0%BC%D0%B0", title: "Коктума", short: "спокойнее" },
+  { href: "/catalog?minPrice=40000", title: "Премиум", short: "сильнее сервис" }
 ] as const;
 
 export function QuickPicks() {
   return (
-    <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)] md:p-7">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-[1.35rem] border border-black/8 bg-white p-3 shadow-[0_12px_36px_rgba(14,26,31,0.08)] md:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3 px-1">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-black/40">готовые сценарии</p>
-          <h2 className="mt-3 font-display text-4xl text-ink">Начать с понятного сценария</h2>
+          <p className="text-xs uppercase tracking-[0.16em] text-black/40">быстрый выбор</p>
+          <h2 className="mt-1 text-xl font-semibold text-ink md:text-2xl">Начать со сценария</h2>
         </div>
-        <p className="max-w-md text-sm leading-6 text-black/58">
-          Это быстрые входы для самых частых клиентских запросов. Один клик вместо длинной ручной настройки фильтров.
-        </p>
+        <Link href="/catalog" className="hidden rounded-full bg-mist px-4 py-2 text-sm font-medium text-ink md:inline-flex">
+          Все
+        </Link>
       </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {picks.map((pick) => (
-          <Link key={pick.href} href={pick.href} className="interactive-surface rounded-[1.5rem] bg-[#f7f1e6] p-5 transition hover:bg-[#efe5d3]">
-            <p className="text-xs uppercase tracking-[0.18em] text-black/38">Быстрый выбор</p>
-            <h3 className="mt-3 font-display text-2xl text-ink">{pick.title}</h3>
-            <p className="mt-3 text-sm leading-6 text-black/62">{pick.description}</p>
-          </Link>
-        ))}
+      <div className="-mx-1 w-full min-w-0 max-w-full overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-2 md:grid md:grid-cols-4">
+          {picks.map((pick) => (
+            <Link
+              key={pick.href}
+              href={pick.href}
+              className="interactive-surface min-w-[146px] rounded-[1.1rem] bg-mist px-4 py-3 transition hover:bg-[#efe5d3] md:min-w-0"
+            >
+              <h3 className="text-sm font-semibold text-ink">{pick.title}</h3>
+              <p className="mt-1 text-xs text-black/54">{pick.short}</p>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

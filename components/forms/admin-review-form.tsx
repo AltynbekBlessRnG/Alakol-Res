@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { ModerationReview, Resort, ResortImage } from "@/lib/types";
 
 type AdminReviewFormProps = {
@@ -36,13 +37,17 @@ export function AdminReviewForm({ resort }: AdminReviewFormProps) {
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-      setError(payload?.message ?? "Не удалось обновить featured.");
+      const nextError = payload?.message ?? "Не удалось обновить featured.";
+      setError(nextError);
+      toast.error(nextError);
       setIsSubmitting(false);
       return;
     }
 
     setIsFeatured(nextFeatured);
-    setMessage(nextFeatured ? "Карточка добавлена в featured." : "Карточка убрана из featured.");
+    const nextMessage = nextFeatured ? "Карточка добавлена в featured." : "Карточка убрана из featured.";
+    setMessage(nextMessage);
+    toast.success(nextMessage);
     startTransition(() => router.refresh());
     setIsSubmitting(false);
   }
@@ -60,12 +65,16 @@ export function AdminReviewForm({ resort }: AdminReviewFormProps) {
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string; missing?: string[] } | null;
       const details = payload?.missing?.length ? ` Не хватает: ${payload.missing.join(", ")}.` : "";
-      setError((payload?.message ?? "Не удалось выполнить действие.") + details);
+      const nextError = (payload?.message ?? "Не удалось выполнить действие.") + details;
+      setError(nextError);
+      toast.error(nextError);
       setIsSubmitting(false);
       return;
     }
 
-    setMessage(action === "publish" ? "Карточка опубликована." : "Карточка отправлена на доработку.");
+    const nextMessage = action === "publish" ? "Карточка опубликована." : "Карточка отправлена на доработку.";
+    setMessage(nextMessage);
+    toast.success(nextMessage);
     startTransition(() => router.refresh());
     setIsSubmitting(false);
   }

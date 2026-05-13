@@ -2,6 +2,7 @@
 
 import { type FormEvent, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Input, Textarea } from "@/components/ui/input";
 
 type LeadFormProps = {
@@ -36,7 +37,9 @@ export function LeadForm({ resortId, id }: LeadFormProps) {
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-      setError(payload?.message ?? "Не удалось отправить заявку.");
+      const nextError = payload?.message ?? "Не удалось отправить заявку.";
+      setError(nextError);
+      toast.error(nextError);
       setIsSubmitting(false);
       return;
     }
@@ -44,7 +47,9 @@ export function LeadForm({ resortId, id }: LeadFormProps) {
     setGuestName("");
     setPhone("");
     setNote("");
-    setMessage("Заявка отправлена. Владельцу уже ушёл сигнал.");
+    const nextMessage = "Заявка отправлена. Владельцу уже ушел сигнал.";
+    setMessage(nextMessage);
+    toast.success(nextMessage);
     startTransition(() => {
       router.refresh();
     });
@@ -55,14 +60,11 @@ export function LeadForm({ resortId, id }: LeadFormProps) {
     <form
       id={id}
       onSubmit={onSubmit}
-      className="space-y-4 rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]"
+      className="space-y-4 rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6"
     >
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-black/45">Быстрая заявка</p>
-        <h3 className="mt-3 font-display text-3xl text-ink">Уточнить даты и условия</h3>
-        <p className="mt-2 text-sm leading-6 text-black/60">
-          Короткая форма без лишних шагов. Подходит для мобильного сценария и быстрого контакта.
-        </p>
+        <h3 className="mt-2 text-2xl font-semibold text-ink md:mt-3 md:text-3xl">Уточнить условия</h3>
       </div>
       <div>
         <label htmlFor={guestNameId} className="mb-2 block text-sm text-black/55">

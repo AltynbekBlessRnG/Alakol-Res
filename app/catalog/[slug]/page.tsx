@@ -72,27 +72,27 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
   const spotlightCards = [
     {
       icon: ShieldCheck,
-      title: "Проверенная карточка",
-      text: "Основные данные собраны в одном месте: цена, берег, правила и контакты."
+      title: "Проверено",
+      text: "Цена, берег и контакты."
     },
     ...(resort.includedText.trim()
       ? [
           {
             icon: Waves,
-            title: "Что уже включено",
+            title: "Включено",
             text: resort.includedText
           }
         ]
       : []),
     {
       icon: Sparkles,
-      title: "Лучше всего подойдёт",
-      text: `Этот объект рассчитан на ${idealForText}.`
+      title: "Формат",
+      text: idealForText
     },
     {
       icon: Star,
       title: "Рейтинг",
-      text: resort.approvedReviewsCount ? `${resort.ratingAverage} / 5 по ${resort.approvedReviewsCount} отзывам` : "Новый объект, рейтинг формируется"
+      text: resort.approvedReviewsCount ? `${resort.ratingAverage} / 5 · ${resort.approvedReviewsCount}` : "Новый объект"
     }
   ];
   const detailSchema = {
@@ -144,15 +144,15 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
   };
 
   return (
-    <main className="bg-[#f7f1e6] pb-28 md:pb-24">
+    <main className="bg-[#f7f1e6] pb-36 pt-16 md:pb-24 md:pt-20">
       <EventTracker eventType="resort_view" resortId={resort.id} slug={resort.slug} metadata={{ title: resort.title }} />
 
-      <section className="relative min-h-[62svh] overflow-hidden bg-[#132028] text-white md:min-h-[72vh]">
+      <section className="relative overflow-hidden bg-[#132028] text-white md:min-h-[68vh]">
         {resort.images[0] && (
           <Image src={resort.images[0].url} alt={resort.images[0].alt} fill priority className="object-cover opacity-55" />
         )}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,29,37,0.18),rgba(15,29,37,0.84)),radial-gradient(circle_at_top_left,rgba(212,155,53,0.18),transparent_34%)]" />
-        <div className="relative mx-auto flex min-h-[62svh] max-w-7xl flex-col justify-between px-5 pb-12 pt-24 md:min-h-[72vh] md:px-8 md:pt-28">
+        <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col justify-between px-4 pb-28 pt-6 md:min-h-[68vh] md:px-8 md:pb-12 md:pt-10">
           <div className="flex items-center justify-between gap-4">
             <Link href="/catalog" className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur-sm">
               Назад в каталог
@@ -165,12 +165,12 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-white/60">{resort.zone}</p>
-              <h1 className="mt-4 max-w-4xl font-display text-5xl leading-[0.92] md:text-7xl">{resort.title}</h1>
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-white/78">{resort.shortDescription}</p>
-              <div className="mt-8 flex flex-wrap gap-3 text-sm">
-                <span className="rounded-full bg-white/10 px-4 py-3 backdrop-blur-sm">от {formatPrice(resort.minPrice)} ₸ / сутки</span>
-                <span className="rounded-full bg-white/10 px-4 py-3 backdrop-blur-sm">{resort.distanceToLakeM} м до воды</span>
-                <span className="rounded-full bg-white/10 px-4 py-3 backdrop-blur-sm">{resort.foodOptions}</span>
+              <h1 className="mt-4 max-w-4xl text-4xl font-semibold leading-[0.96] md:text-6xl xl:text-7xl">{resort.title}</h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-white/78 md:text-lg md:leading-8">{resort.shortDescription}</p>
+              <div className="mt-6 flex flex-wrap gap-2 text-sm md:mt-8 md:gap-3">
+                <span className="rounded-full bg-white/12 px-4 py-2.5 backdrop-blur-sm md:py-3">от {formatPrice(resort.minPrice)} ₸ / сутки</span>
+                <span className="rounded-full bg-white/12 px-4 py-2.5 backdrop-blur-sm md:py-3">{resort.distanceToLakeM} м до воды</span>
+                <span className="rounded-full bg-white/12 px-4 py-2.5 backdrop-blur-sm md:py-3">{resort.foodOptions}</span>
                 {resort.approvedReviewsCount > 0 && (
                   <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-3 backdrop-blur-sm">
                     <Star size={16} className="fill-[#d49b35] text-[#d49b35]" />
@@ -180,26 +180,26 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
               </div>
             </div>
 
-            <div className="grid gap-3 rounded-[2rem] border border-white/12 bg-white/10 p-4 backdrop-blur-md md:grid-cols-2 md:p-5">
+            <div className="hidden gap-2 rounded-[1.35rem] border border-white/12 bg-white/10 p-3 backdrop-blur-md md:grid md:grid-cols-2 md:gap-3 md:rounded-[2rem] md:p-5">
               {summaryCards.map((item) => (
-                <div key={item.label} className="rounded-[1.5rem] bg-white/8 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/55">{item.label}</p>
-                  <p className="mt-3 text-lg text-white">{item.value}</p>
+                <div key={item.label} className="rounded-[1rem] bg-white/8 p-3 md:rounded-[1.5rem] md:p-4">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-white/55 md:text-xs md:tracking-[0.2em]">{item.label}</p>
+                  <p className="mt-2 text-sm leading-5 text-white md:mt-3 md:text-lg">{item.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="mt-5 md:hidden">
+          <div className="hidden">
             <PublicActions slug={resort.slug} title={resort.title} />
           </div>
         </div>
       </section>
 
-      <section className="mx-auto -mt-2 pt-6 max-w-7xl px-5 md:pt-8 md:px-8">
-        <div className="grid gap-4 rounded-[2rem] bg-white p-5 shadow-[0_20px_80px_rgba(19,32,40,0.10)] md:grid-cols-2 xl:grid-cols-4">
+      <section className="mx-auto max-w-7xl px-4 pt-5 md:px-8 md:pt-8">
+        <div className="grid gap-3 rounded-[1.35rem] bg-white p-4 shadow-[0_16px_48px_rgba(19,32,40,0.10)] md:grid-cols-2 md:rounded-[2rem] md:p-5 xl:grid-cols-4">
           {spotlightCards.map((item) => (
-            <div key={item.title} className="rounded-[1.5rem] bg-[#f7f1e6] p-4">
+            <div key={item.title} className="rounded-[1rem] bg-[#f7f1e6] p-4 md:rounded-[1.5rem]">
               <div className="flex items-center gap-2 text-sm text-pine">
                 <item.icon size={16} className={item.title === "Рейтинг" ? "fill-[#d49b35] text-[#d49b35]" : undefined} />
                 {item.title}
@@ -210,23 +210,23 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-10 md:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
         <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="order-2 space-y-8 lg:order-1">
-            <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+          <div className="order-2 space-y-5 md:space-y-8 lg:order-1">
+            <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
               <div className="flex items-center gap-2 text-sm text-pine">
                 <BadgeCheck size={16} />
-                Проверенная карточка
+                Проверено
               </div>
-              <h2 className="mt-5 font-display text-4xl text-ink">Коротко о месте</h2>
+              <h2 className="mt-4 text-2xl font-semibold text-ink md:mt-5 md:text-4xl">О месте</h2>
               <p className="mt-5 max-w-3xl text-base leading-8 text-black/72">{resort.description}</p>
             </div>
 
             <ResortGallery images={resort.images} />
 
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-                <h2 className="font-display text-3xl text-ink">Условия и удобства</h2>
+              <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
+                <h2 className="text-2xl font-semibold text-ink md:text-3xl">Удобства</h2>
                 <div className="mt-5 flex flex-wrap gap-2">
                   {resort.amenities.map((amenity: (typeof resort.amenities)[number]) => (
                     <span key={amenity.id} className="rounded-full bg-[#f7f1e6] px-4 py-3 text-sm">
@@ -235,8 +235,8 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
                   ))}
                 </div>
               </div>
-              <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-                <h2 className="font-display text-3xl text-ink">Что важно знать заранее</h2>
+              <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
+                <h2 className="text-2xl font-semibold text-ink md:text-3xl">Важно</h2>
                 {detailFacts.length ? (
                   <div className="mt-5 space-y-4 text-sm leading-7 text-black/68">
                     {detailFacts.map((item) => (
@@ -247,14 +247,14 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
                   </div>
                 ) : (
                   <p className="mt-5 text-sm leading-7 text-black/58">
-                    Подробные условия лучше уточнить при обращении: владелец подскажет по правилам, берегу и тому, что входит в стоимость.
+                    Уточните детали у владельца.
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-              <h2 className="font-display text-3xl text-ink">Цены и размещение</h2>
+            <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
+              <h2 className="text-2xl font-semibold text-ink md:text-3xl">Цены и размещение</h2>
               <div className="mt-6 grid gap-4">
                 {resort.prices.map((price: (typeof resort.prices)[number]) => (
                   <div key={price.id} className="flex flex-col gap-2 rounded-[1.5rem] bg-[#f7f1e6] px-5 py-4 md:flex-row md:items-center md:justify-between">
@@ -268,9 +268,9 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
               </div>
             </div>
 
-            <div id="reviews" className="rounded-[2rem] bg-white p-8 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+            <div id="reviews" className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
               <div className="flex items-center justify-between gap-4">
-                <h2 className="font-display text-3xl text-ink">Отзывы гостей</h2>
+                <h2 className="text-2xl font-semibold text-ink md:text-3xl">Отзывы гостей</h2>
                 {resort.approvedReviewsCount > 0 && <p className="text-sm text-black/55">{resort.ratingAverage} / 5</p>}
               </div>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -287,11 +287,11 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
             </div>
           </div>
 
-          <div className="order-1 space-y-6 lg:sticky lg:top-6 lg:order-2 lg:self-start">
-            <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+          <div className="order-1 space-y-5 lg:sticky lg:top-24 lg:order-2 lg:self-start">
+            <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
               <p className="text-xs uppercase tracking-[0.2em] text-black/45">Главное по объекту</p>
-              <p className="mt-3 font-display text-4xl text-ink">от {formatPrice(resort.minPrice)} ₸</p>
-              <p className="mt-2 text-sm text-black/58">за базовый вариант размещения</p>
+              <p className="mt-3 text-3xl font-semibold text-ink md:text-4xl">от {formatPrice(resort.minPrice)} ₸</p>
+              <p className="mt-2 text-sm text-black/58">за базовый вариант</p>
               <div className="mt-5 grid gap-3 rounded-[1.5rem] bg-[#f7f1e6] p-4 text-sm leading-6 text-black/64">
                 <p><strong>Подойдёт:</strong> {idealForText}</p>
                 <p><strong>До воды:</strong> {resort.distanceToLakeM} м</p>
@@ -311,12 +311,9 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
             </div>
 
             <LeadForm resortId={resort.id} id="lead-form" />
-            <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+            <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
               <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>
-              <h3 className="mt-3 font-display text-3xl text-ink">Поделиться впечатлением после отдыха</h3>
-              <p className="mt-3 text-sm leading-6 text-black/60">
-                Отзывы помогают следующим гостям быстрее понять атмосферу, берег и качество сервиса. Новый отзыв сначала уходит на модерацию.
-              </p>
+              <h3 className="mt-3 font-display text-3xl text-ink">Поделиться впечатлением</h3>
               <div className="mt-5">
                 <ReviewForm resortId={resort.id} returnTo={`/catalog/${resort.slug}`} embedded />
               </div>
@@ -336,7 +333,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
                 </h2>
               </div>
               <div className="max-w-xl text-sm leading-7 text-black/62 lg:justify-self-end">
-                До воды {resort.distanceToLakeM} м, адрес: {resort.address}. Здесь удобно заранее оценить локацию, берег и подъезд к объекту.
+                {resort.distanceToLakeM} м до воды. {resort.address}.
               </div>
             </div>
 
@@ -372,11 +369,11 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-white/95 p-4 backdrop-blur md:hidden">
+      <div className="hidden">
         <div className="mx-auto max-w-7xl">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-black/38">Быстрый контакт</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-black/38">Быстрый контакт</p>
               <p className="text-sm text-black/65">от {formatPrice(resort.minPrice)} ₸ · {resort.distanceToLakeM} м до воды</p>
             </div>
             <a href="#lead-form" className="text-sm font-medium text-pine">Заявка</a>

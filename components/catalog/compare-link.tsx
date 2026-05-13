@@ -24,8 +24,8 @@ export function CompareLink({ mobile = false }: { mobile?: boolean }) {
       href="/compare"
       className={
         mobile
-          ? "rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white"
-          : "inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white transition hover:border-white/20 hover:bg-white/[0.09]"
+          ? "inline-flex items-center gap-2 rounded-full border border-black/8 bg-white px-3 py-2 text-xs font-semibold text-ink"
+          : "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-ink transition hover:bg-mist"
       }
     >
       <Scale size={mobile ? 14 : 16} />

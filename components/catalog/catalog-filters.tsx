@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Check, Search } from "lucide-react";
 import { CatalogFilters } from "@/lib/resorts";
 import { Input } from "@/components/ui/input";
 
@@ -8,7 +9,7 @@ type CatalogFiltersProps = {
   filters: CatalogFilters;
 };
 
-const zones = ["Акши", "Кабанбай"];
+const zones = ["Акши", "Кабанбай", "Коктума"];
 
 const toggles = [
   { key: "familyFriendly", label: "Семейный формат" },
@@ -21,20 +22,22 @@ const toggles = [
 
 export function CatalogFiltersPanel({ filters }: CatalogFiltersProps) {
   return (
-    <aside className="rounded-[2.2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-      <div className="border-b border-black/8 pb-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-black/40">Фильтры</p>
-        <h2 className="mt-3 font-display text-4xl leading-none text-ink">Подобрать спокойно</h2>
-        <p className="mt-3 max-w-sm text-sm leading-6 text-black/58">
-          Сузьте выбор по цене, локации и формату отдыха, а затем смотрите карточки уже в удобном порядке.
-        </p>
+    <aside className="rounded-[1.35rem] border border-black/8 bg-white p-4 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:p-5">
+      <div className="border-b border-black/8 pb-4">
+        <p className="text-xs uppercase tracking-[0.16em] text-black/40">Фильтры</p>
+        <h2 className="mt-2 text-2xl font-semibold leading-tight text-ink">Подобрать без перегруза</h2>
       </div>
-      <form action="/catalog" className="mt-5 space-y-5">
+
+      <form action="/catalog" className="mt-4 space-y-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-black/45">Поиск</p>
-          <Input name="q" defaultValue={filters.q} placeholder="Название, зона, удобство" className="mt-2 border-black/10 bg-[#fcfaf5]" />
+          <label className="mb-2 flex items-center gap-2 text-sm font-medium text-ink">
+            <Search size={15} />
+            Поиск
+          </label>
+          <Input name="q" defaultValue={filters.q} placeholder="Название, зона, удобство" className="border-black/10 bg-[#fcfaf5]" />
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm text-black/55">Мин. цена</label>
             <Input type="number" name="minPrice" defaultValue={filters.minPrice} placeholder="20000" className="border-black/10 bg-[#fcfaf5]" />
@@ -44,45 +47,48 @@ export function CatalogFiltersPanel({ filters }: CatalogFiltersProps) {
             <Input type="number" name="maxPrice" defaultValue={filters.maxPrice} placeholder="60000" className="border-black/10 bg-[#fcfaf5]" />
           </div>
         </div>
+
         <div>
           <p className="mb-2 text-sm text-black/55">Зона отдыха</p>
           <div className="flex flex-wrap gap-2">
-            <label className={`rounded-full px-4 py-2 text-sm ${!filters.zone ? "bg-pine text-white" : "bg-mist text-ink"}`}>
-              <input type="radio" name="zone" value="" defaultChecked={!filters.zone} className="hidden" />
-              Все зоны
+            <label className={`cursor-pointer rounded-full px-4 py-2 text-sm ${!filters.zone ? "bg-pine text-white" : "bg-mist text-ink"}`}>
+              <input type="radio" name="zone" value="" defaultChecked={!filters.zone} className="sr-only" />
+              Все
             </label>
             {zones.map((zone) => {
               const active = filters.zone === zone;
               return (
-                <label key={zone} className={`rounded-full px-4 py-2 text-sm ${active ? "bg-pine text-white" : "bg-mist text-ink"}`}>
-                  <input type="radio" name="zone" value={zone} defaultChecked={active} className="hidden" />
+                <label key={zone} className={`cursor-pointer rounded-full px-4 py-2 text-sm ${active ? "bg-pine text-white" : "bg-mist text-ink"}`}>
+                  <input type="radio" name="zone" value={zone} defaultChecked={active} className="sr-only" />
                   {zone}
                 </label>
               );
             })}
           </div>
         </div>
-        <div className="grid gap-3">
+
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
           {toggles.map((toggle) => (
-            <label key={toggle.key} className="flex items-center gap-3 rounded-2xl bg-mist px-4 py-3 text-sm">
+            <label key={toggle.key} className="flex cursor-pointer items-center gap-3 rounded-2xl bg-mist px-4 py-3 text-sm">
               <input
                 type="checkbox"
                 name={toggle.key}
                 value="true"
                 defaultChecked={Boolean(filters[toggle.key])}
-                className="size-4 rounded border-black/15"
+                className="peer sr-only"
               />
+              <span className="grid size-5 place-items-center rounded-full border border-black/15 bg-white text-transparent peer-checked:border-pine peer-checked:bg-pine peer-checked:text-white">
+                <Check size={13} />
+              </span>
               {toggle.label}
             </label>
           ))}
         </div>
-        <div className="rounded-[1.6rem] bg-[#f7f1e6] p-4 text-sm leading-6 text-black/58">
-          Отмечайте только важные параметры. Остальное удобнее сравнивать уже на самой карточке объекта.
-        </div>
-        <div className="flex gap-3">
+
+        <div className="flex gap-2 pt-1">
           <button className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-medium text-white">Применить</button>
           <Link href="/catalog" className="rounded-full bg-mist px-4 py-3 text-sm font-medium text-ink">
-            Сбросить
+            Сброс
           </Link>
         </div>
       </form>

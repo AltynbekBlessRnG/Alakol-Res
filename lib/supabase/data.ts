@@ -23,6 +23,7 @@ import type {
 } from "@/lib/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getPublishedResortBySlugFromSupabase, hydrateResortRows, type ResortRow } from "@/lib/supabase/resorts";
+import * as fallback from "@/lib/_dev-fallback-data";
 
 type UserRow = {
   id: string;
@@ -222,7 +223,7 @@ async function getOwnerProfileIdForUser(userId: string) {
 
 export async function getUserByEmailFromSupabase(email: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.getUserByEmail(email);
 
   const { data } = await supabase.from("users").select("*").eq("email", email.trim().toLowerCase()).maybeSingle();
   if (!data) return null;
@@ -232,7 +233,7 @@ export async function getUserByEmailFromSupabase(email: string) {
 
 export async function getUserByIdFromSupabase(id: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.getUserById(id);
 
   const { data } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
   if (!data) return null;
@@ -241,6 +242,9 @@ export async function getUserByIdFromSupabase(id: string) {
 }
 
 export function verifyPasswordAgainstSupabaseUser(user: User, password: string) {
+  if (user.id.startsWith("user-")) {
+    return fallback.verifyPassword(user, password);
+  }
   return bcrypt.compareSync(password, user.passwordHash);
 }
 
@@ -335,14 +339,14 @@ export async function createUserInSupabase(input: {
 
 export async function listNotificationsFromSupabase(userId: string, limit = 8) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listNotifications(userId, limit);
   const { data } = await supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(limit);
   return ((data as NotificationRow[] | null) ?? []).map(mapNotification);
 }
 
 export async function createNotificationInSupabase(input: { userId: string; type: NotificationType; title: string; body: string; href?: string }) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.createNotification(input);
   const payload = {
     id: createId("notification"),
     user_id: input.userId,
@@ -357,7 +361,7 @@ export async function createNotificationInSupabase(input: { userId: string; type
 
 export async function toggleFavoriteForUserInSupabase(userId: string, resortId: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return false;
+  if (!supabase) return fallback.toggleFavoriteForUser(userId, resortId);
   const { data: existing } = await supabase.from("favorites").select("id").eq("user_id", userId).eq("resort_id", resortId).maybeSingle();
   if (existing?.id) {
     await supabase.from("favorites").delete().eq("id", existing.id);
@@ -373,7 +377,7 @@ export async function toggleFavoriteForUserInSupabase(userId: string, resortId: 
 
 export async function listUserFavoriteResortsFromSupabase(userId: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listUserFavoriteResorts(userId);
   const { data } = await supabase.from("favorites").select("resort_id").eq("user_id", userId).order("created_at", { ascending: false });
   const resortIds = ((data as Array<{ resort_id: string }> | null) ?? []).map((item) => item.resort_id);
   if (!resortIds.length) return [];
@@ -383,7 +387,7 @@ export async function listUserFavoriteResortsFromSupabase(userId: string) {
 
 export async function listUserReviewsFromSupabase(userId: string): Promise<UserReviewItem[]> {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listUserReviews(userId);
   const { data: reviews } = await supabase.from("reviews").select("*").eq("user_id", userId).order("created_at", { ascending: false });
   const rows = (reviews as ReviewRow[] | null) ?? [];
   if (!rows.length) return [];
@@ -404,7 +408,7 @@ export async function listUserReviewsFromSupabase(userId: string): Promise<UserR
 
 export async function createReviewInSupabase(input: { resortId: string; userId?: string | null; authorName: string; body: string; rating: number }) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.createReview(input);
   const id = createId("review");
   await supabase.from("reviews").insert({
     id,
@@ -420,13 +424,13 @@ export async function createReviewInSupabase(input: { resortId: string; userId?:
 
 export async function moderateReviewInSupabase(id: string, status: "approved" | "pending") {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.moderateReview(id, status);
   await supabase.from("reviews").update({ status }).eq("id", id);
 }
 
 export async function listPendingReviewsFromSupabase() {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listPendingReviews();
   const { data: reviews } = await supabase.from("reviews").select("*").eq("status", "pending").order("created_at", { ascending: false });
   const rows = (reviews as ReviewRow[] | null) ?? [];
   const resortIds = [...new Set(rows.map((row) => row.resort_id))];
@@ -439,7 +443,7 @@ export async function listPendingReviewsFromSupabase() {
 
 export async function createLeadInSupabase(input: { resortId: string; guestName: string; phone: string; note?: string; source?: string }) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.createLead(input);
   const id = createId("lead");
   await supabase.from("leads").insert({
     id,
@@ -455,7 +459,7 @@ export async function createLeadInSupabase(input: { resortId: string; guestName:
 
 export async function updateLeadInSupabase(id: string, input: { status: LeadStatus; ownerComment?: string }) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.updateLead(id, input);
   await supabase.from("leads").update({ status: input.status, owner_comment: input.ownerComment ?? null, updated_at: new Date().toISOString() }).eq("id", id);
 }
 
@@ -477,7 +481,10 @@ export async function listAllPublishedSlugsFromSupabase() {
 
 export async function getResortByIdFromSupabase(id: string): Promise<ResortWithRelations | null> {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) {
+    const resort = fallback.getResortById(id);
+    return resort ? fallback.enrichResort(resort) : null;
+  }
   const { data } = await supabase.from("resorts").select("*").eq("id", id).maybeSingle();
   const row = data as ResortRow | null;
   if (!row) return null;
@@ -487,14 +494,14 @@ export async function getResortByIdFromSupabase(id: string): Promise<ResortWithR
 
 export async function listOwnerResortsFromSupabase(ownerProfileId: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listOwnerResorts(ownerProfileId);
   const { data } = await supabase.from("resorts").select("*").eq("owner_profile_id", ownerProfileId).order("updated_at", { ascending: false });
   return ((data as ResortRow[] | null) ?? []).map(mapResortRow);
 }
 
 export async function listOwnerLeadsFromSupabase(ownerProfileId: string, filters?: { status?: LeadStatus | "all"; q?: string }): Promise<OwnerLead[]> {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listOwnerLeads(ownerProfileId, filters);
   const { data: resorts } = await supabase.from("resorts").select("id,title,owner_profile_id").eq("owner_profile_id", ownerProfileId);
   const resortRows = (resorts as Array<{ id: string; title: string; owner_profile_id: string }> | null) ?? [];
   const resortIds = resortRows.map((item) => item.id);
@@ -519,7 +526,7 @@ export async function listOwnerLeadsFromSupabase(ownerProfileId: string, filters
 
 export async function listPendingResortsFromSupabase(): Promise<PendingResort[]> {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listPendingResorts();
   const { data } = await supabase.from("resorts").select("*").in("status", ["PENDING_REVIEW", "REJECTED"]).order("updated_at", { ascending: false });
   const valid = await hydrateResortRows((data as ResortRow[] | null) ?? []);
   return Promise.all(valid.map(async (resort) => ({
@@ -531,7 +538,7 @@ export async function listPendingResortsFromSupabase(): Promise<PendingResort[]>
 
 export async function listModerationReviewsByResortFromSupabase(resortId: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listModerationReviewsByResort(resortId);
   const { data } = await supabase.from("moderation_reviews").select("*").eq("resort_id", resortId).order("created_at", { ascending: false });
   return ((data as ModerationReviewRow[] | null) ?? []).map((row) => ({
     id: row.id,
@@ -545,7 +552,7 @@ export async function listModerationReviewsByResortFromSupabase(resortId: string
 
 export async function listAuditFromSupabase(limit = 8): Promise<AuditItem[]> {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listAudit(limit);
   const { data } = await supabase.from("moderation_reviews").select("*").order("created_at", { ascending: false }).limit(limit);
   const rows = (data as ModerationReviewRow[] | null) ?? [];
   const resortIds = [...new Set(rows.map((row) => row.resort_id))];
@@ -572,7 +579,7 @@ export async function listAuditFromSupabase(limit = 8): Promise<AuditItem[]> {
 
 export async function listIncompleteResortsFromSupabase() {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
+  if (!supabase) return fallback.listIncompleteResorts();
   const { data } = await supabase.from("resorts").select("*").order("updated_at", { ascending: false });
   const resorts = await hydrateResortRows((data as ResortRow[] | null) ?? []);
   return resorts
@@ -582,7 +589,7 @@ export async function listIncompleteResortsFromSupabase() {
 
 export async function listAnalyticsSummaryFromSupabase() {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return { totalLeads: 0, totalPublished: 0, totalOwners: 0, topResorts: [], eventCounts: [] };
+  if (!supabase) return fallback.listAnalyticsSummary();
   const [leads, published, owners, resorts] = await Promise.all([
     supabase.from("leads").select("id", { count: "exact", head: true }),
     supabase.from("resorts").select("id", { count: "exact", head: true }).eq("status", "PUBLISHED"),
@@ -624,7 +631,7 @@ export async function listAnalyticsSummaryFromSupabase() {
 
 export async function createAnalyticsEventInSupabase(input: { eventType: string; resortId?: string; slug?: string; metadata?: string }) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.createAnalyticsEvent(input);
   try {
     const id = createId("event");
     await supabase.from("analytics_events").insert({
@@ -642,6 +649,7 @@ export async function createAnalyticsEventInSupabase(input: { eventType: string;
 }
 
 export async function createPasswordResetTokenInSupabase(email: string) {
+  if (!createSupabaseAdminClient()) return fallback.createPasswordResetToken(email);
   const user = await getUserByEmailFromSupabase(email);
   if (!user) return null;
   const supabase = createSupabaseAdminClient();
@@ -660,7 +668,7 @@ export async function createPasswordResetTokenInSupabase(email: string) {
 
 export async function getValidPasswordResetTokenFromSupabase(token: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.getValidPasswordResetToken(token);
   const { data } = await supabase.from("password_reset_tokens").select("*").eq("token", token).maybeSingle();
   const row = data as PasswordResetTokenRow | null;
   if (!row || row.used_at || new Date(row.expires_at).getTime() < Date.now()) return null;
@@ -669,19 +677,20 @@ export async function getValidPasswordResetTokenFromSupabase(token: string) {
 
 export async function markPasswordResetTokenUsedInSupabase(id: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.markPasswordResetTokenUsed(id);
   await supabase.from("password_reset_tokens").update({ used_at: new Date().toISOString() }).eq("id", id);
 }
 
 export async function updateUserPasswordInSupabase(userId: string, password: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.updateUserPassword(userId, password);
   await supabase.from("users").update({ password_hash: bcrypt.hashSync(password, 10) }).eq("id", userId);
 }
 
 export async function appendResortImagesInSupabase(resortId: string, urls: string[]) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase || !urls.length) return;
+  if (!supabase) return fallback.appendResortImages(resortId, urls);
+  if (!urls.length) return;
   const { data: current } = await supabase.from("resort_images").select("sort_order").eq("resort_id", resortId).order("sort_order", { ascending: false }).limit(1);
   let nextOrder = (((current as Array<{ sort_order: number }> | null) ?? [])[0]?.sort_order ?? -1) + 1;
   await supabase.from("resort_images").insert(
@@ -698,7 +707,7 @@ export async function appendResortImagesInSupabase(resortId: string, urls: strin
 
 export async function replaceResortImagesInSupabase(resortId: string, images: Array<{ url: string; kind: string }>) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.replaceResortImages(resortId, images);
   await supabase.from("resort_images").delete().eq("resort_id", resortId);
   if (!images.length) return;
   await supabase.from("resort_images").insert(
@@ -715,7 +724,7 @@ export async function replaceResortImagesInSupabase(resortId: string, images: Ar
 
 export async function replaceResortAmenitiesInSupabase(resortId: string, amenities: string[]) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.replaceResortAmenities(resortId, amenities);
   await supabase.from("resort_amenities").delete().eq("resort_id", resortId);
   if (!amenities.length) return;
   await supabase.from("resort_amenities").insert(
@@ -748,7 +757,7 @@ export async function replaceResortPricesInSupabase(
 
 export async function addModerationReviewInSupabase(input: { resortId: string; adminId?: string; action: string; comment?: string }) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.addModerationReview(input);
   await supabase.from("moderation_reviews").insert({
     id: createId("audit"),
     resort_id: input.resortId,
@@ -760,13 +769,13 @@ export async function addModerationReviewInSupabase(input: { resortId: string; a
 
 export async function setResortFeaturedInSupabase(id: string, featured: boolean) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.setResortFeatured(id, featured);
   await supabase.from("resorts").update({ is_featured: featured, updated_at: new Date().toISOString() }).eq("id", id);
 }
 
 export async function updateResortRecordInSupabase(id: string, resort: Resort) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return;
+  if (!supabase) return fallback.updateResortRecord(id, resort);
   await supabase.from("resorts").update({
     owner_profile_id: resort.ownerProfileId,
     title: resort.title,
@@ -802,7 +811,7 @@ export async function updateResortRecordInSupabase(id: string, resort: Resort) {
 
 export async function createDraftResortInSupabase(ownerProfileId: string) {
   const supabase = createSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) return fallback.createDraftResort(ownerProfileId);
   const id = createId("resort");
   const now = new Date().toISOString();
   await supabase.from("resorts").insert({

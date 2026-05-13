@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAnalyticsEventInSupabase } from "@/lib/supabase/data";
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
   await createAnalyticsEventInSupabase({
     eventType: String(body.eventType || "unknown"),
     resortId: body.resortId ? String(body.resortId) : undefined,

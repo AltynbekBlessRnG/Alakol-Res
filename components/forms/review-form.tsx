@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId: string; returnTo: string; embedded?: boolean }) {
   const { data: session, status } = useSession();
@@ -21,9 +22,6 @@ export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId:
       <div className={embedded ? "" : "rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]"}>
         {!embedded && <p className="text-xs uppercase tracking-[0.2em] text-black/45">Отзывы</p>}
         <h3 className={`${embedded ? "font-display text-2xl text-ink" : "mt-3 font-display text-3xl text-ink"}`}>Войдите, чтобы оставить отзыв</h3>
-        <p className="mt-4 text-sm leading-7 text-black/60">
-          Отзывы публикуются от имени аккаунта и уходят на модерацию. Так карточки выглядят надёжнее, а впечатления гостей остаются понятными и живыми.
-        </p>
         <Link
           href={`/login?callbackUrl=${encodeURIComponent(`${returnTo}#reviews`)}`}
           className="mt-6 inline-flex rounded-full bg-pine px-5 py-3 text-sm font-medium text-white"
@@ -43,7 +41,9 @@ export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId:
     const nextRating = Number(rating);
 
     if (!nextBody || nextRating < 1 || nextRating > 5) {
-      setError("Заполните текст отзыва и выберите корректную оценку.");
+      const nextError = "Заполните текст отзыва и выберите корректную оценку.";
+      setError(nextError);
+      toast.error(nextError);
       return;
     }
 
@@ -59,16 +59,22 @@ export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId:
       const payload = (await response.json()) as { message?: string };
 
       if (!response.ok) {
-        setError(payload.message || "Не удалось отправить отзыв.");
+        const nextError = payload.message || "Не удалось отправить отзыв.";
+        setError(nextError);
+        toast.error(nextError);
         setIsSubmitting(false);
         return;
       }
 
       setBody("");
       setRating("5");
-      setSuccess(payload.message || "Отзыв отправлен на модерацию.");
+      const nextSuccess = payload.message || "Отзыв отправлен на модерацию.";
+      setSuccess(nextSuccess);
+      toast.success(nextSuccess);
     } catch {
-      setError("Не удалось отправить отзыв. Попробуйте ещё раз.");
+      const nextError = "Не удалось отправить отзыв. Попробуйте еще раз.";
+      setError(nextError);
+      toast.error(nextError);
     } finally {
       setIsSubmitting(false);
     }
@@ -78,7 +84,7 @@ export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId:
     <form onSubmit={onSubmit} className={embedded ? "" : "rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]"}>
       {!embedded && <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>}
       <h3 className={`${embedded ? "font-display text-2xl text-ink" : "mt-3 font-display text-3xl text-ink"}`}>Поделиться впечатлением</h3>
-      <p className="mt-2 text-sm text-black/55">Отзыв будет опубликован от имени {session.user.name} после модерации.</p>
+      <p className="mt-2 text-sm text-black/55">После модерации.</p>
       <div className="mt-4 grid gap-4">
         <select value={rating} onChange={(event) => setRating(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none">
           {[5, 4, 3, 2, 1].map((value) => (
