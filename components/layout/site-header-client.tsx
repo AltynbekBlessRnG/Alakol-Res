@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Building2, Heart, Home, LogIn, LogOut, Menu, Search, Shield, UserCircle2, UserRound, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CompareLink } from "@/components/catalog/compare-link";
 import { FavoritesLink } from "@/components/catalog/favorites-link";
@@ -15,6 +16,7 @@ type SiteHeaderClientProps = {
 
 export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeaderClientProps) {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const effectiveRole = role ?? session?.user.role;
   const effectiveUserName = userName ?? session?.user.name ?? null;
@@ -41,6 +43,7 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
   }, [effectiveRole]);
 
   const roleLabel = effectiveRole === "ADMIN" ? "Администратор" : effectiveRole === "OWNER" ? "Владелец" : "Пользователь";
+  const hideMobileNav = pathname === "/login" || pathname === "/forgot-password" || pathname?.startsWith("/reset-password");
 
   return (
     <>
@@ -144,6 +147,7 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
         )}
       </header>
 
+      {!hideMobileNav && (
       <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-4 gap-1 rounded-[1.35rem] border border-black/8 bg-[#fbf7ef] p-1.5 shadow-[0_18px_60px_rgba(19,32,40,0.18)] md:hidden">
         <Link href="/" className="flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium text-ink">
           <Home size={17} />
@@ -162,6 +166,7 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
           Кабинет
         </Link>
       </nav>
+      )}
     </>
   );
 }
