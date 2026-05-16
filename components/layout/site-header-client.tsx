@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CompareLink } from "@/components/catalog/compare-link";
 import { FavoritesLink } from "@/components/catalog/favorites-link";
+import { BrandMark } from "@/components/layout/brand-mark";
 
 type SiteHeaderClientProps = {
   isAuthenticated?: boolean;
@@ -50,9 +51,7 @@ export function SiteHeaderClient({ isAuthenticated, role, userName }: SiteHeader
       <header className="fixed inset-x-0 top-0 z-50 border-b border-black/8 bg-[#fbf7ef]/92 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 md:h-20 md:px-8">
           <Link href="/" className="flex min-w-0 items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-pine text-sm font-semibold text-white md:size-11">
-              AS
-            </span>
+            <BrandMark className="size-10 md:size-11" />
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold uppercase tracking-[0.16em] text-ink md:text-base">
                 Alakol Select

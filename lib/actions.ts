@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { ResortStatus } from "@/lib/types";
 import { getResortCompleteness } from "@/lib/supabase/data";
@@ -66,6 +66,13 @@ function parsePriceRows(value: string) {
 }
 
 export type ActionResult = { success: true } | { success: false; error: string };
+
+function revalidatePublicResorts(slug?: string) {
+  revalidateTag("public-resorts");
+  revalidatePath("/");
+  revalidatePath("/catalog");
+  if (slug) revalidatePath(`/catalog/${slug}`);
+}
 
 export async function createLeadAction(formData: FormData): Promise<ActionResult> {
   try {
@@ -199,6 +206,7 @@ export async function updateResortAction(formData: FormData) {
 
   revalidatePath("/owner");
   revalidatePath("/catalog");
+  revalidatePublicResorts(resort.slug);
   redirect(`/owner/resorts/${id}?saved=1`);
 }
 
@@ -275,6 +283,7 @@ export async function moderateResortAction(formData: FormData): Promise<ActionRe
 
     revalidatePath("/admin");
     revalidatePath("/catalog");
+    revalidatePublicResorts(resort.slug);
     redirect("/admin");
     return { success: true };
   } catch (error) {
@@ -300,6 +309,7 @@ export async function createDraftResortAction(_formData?: FormData) {
 export async function appendUploadedImagesAction(resortId: string, urls: string[]) {
   await appendResortImagesInSupabase(resortId, urls);
   revalidatePath(`/owner/resorts/${resortId}`);
+  revalidatePublicResorts();
 }
 
 export async function reorderResortImagesAction(formData: FormData): Promise<ActionResult> {
@@ -317,6 +327,7 @@ export async function reorderResortImagesAction(formData: FormData): Promise<Act
     revalidatePath("/owner");
     revalidatePath(`/owner/resorts/${resortId}`);
     revalidatePath("/catalog");
+    revalidatePublicResorts(resort.slug);
     return { success: true };
   } catch (error) {
     console.error("reorderResortImagesAction error:", error);
@@ -344,6 +355,7 @@ export async function toggleFeaturedAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/catalog");
   revalidatePath("/");
+  revalidatePublicResorts();
 }
 
 export async function createReviewAction(formData: FormData): Promise<ActionResult> {
@@ -383,6 +395,7 @@ export async function moderateReviewAction(formData: FormData) {
   await moderateReviewInSupabase(id, status);
   revalidatePath("/admin");
   revalidatePath("/catalog");
+  revalidatePublicResorts();
 }
 
 export async function requestPasswordResetAction(formData: FormData) {

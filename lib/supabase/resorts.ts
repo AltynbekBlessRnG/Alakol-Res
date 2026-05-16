@@ -338,7 +338,10 @@ export async function listPublishedResortsFromSupabase(filters: ResortQueryFilte
   const query = buildPublishedResortsQuery(filters);
   if (!query) return [];
 
-  const { data, error } = await query.order("is_featured", { ascending: false }).order("min_price", { ascending: true });
+  const { data, error } = await query
+    .order("is_featured", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .order("min_price", { ascending: true });
 
   if (error) {
     throw error;

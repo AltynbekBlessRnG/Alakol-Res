@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import {
@@ -10,6 +11,14 @@ import {
   updateResortRecordInSupabase
 } from "@/lib/supabase/data";
 import { adminResortActionSchema } from "@/lib/validation";
+
+function revalidatePublicResorts(slug?: string) {
+  revalidateTag("public-resorts");
+  revalidatePath("/");
+  revalidatePath("/catalog");
+  revalidatePath("/admin");
+  if (slug) revalidatePath(`/catalog/${slug}`);
+}
 
 export async function POST(
   request: Request,
@@ -29,6 +38,8 @@ export async function POST(
 
   if (body.type === "featured") {
     await setResortFeaturedInSupabase(id, body.featured);
+    const resort = await getResortByIdFromSupabase(id);
+    revalidatePublicResorts(resort?.slug);
     return NextResponse.json({ ok: true, featured: body.featured });
   }
 
@@ -51,6 +62,7 @@ export async function POST(
     status: nextStatus,
     updatedAt: new Date()
   });
+  revalidatePublicResorts(resort.slug);
   await addModerationReviewInSupabase({
     resortId: id,
     adminId: session.user.id,

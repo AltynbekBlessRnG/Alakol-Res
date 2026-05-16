@@ -1060,7 +1060,7 @@ export function listModerationReviewsByResort(resortId: string) {
 
 export function listPublishedResorts() {
   return getDb()
-    .prepare("SELECT * FROM resorts WHERE status = 'PUBLISHED' ORDER BY isFeatured DESC, minPrice ASC")
+    .prepare("SELECT * FROM resorts WHERE status = 'PUBLISHED' ORDER BY isFeatured DESC, datetime(updatedAt) DESC, minPrice ASC")
     .all()
     .map((row) => rowToResort(row as DbRow))
     .map(enrichResort);

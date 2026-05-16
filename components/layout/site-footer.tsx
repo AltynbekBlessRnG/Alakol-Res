@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Heart, MapPin, Scale, UserRound } from "lucide-react";
+import { BrandMark } from "@/components/layout/brand-mark";
 
 const primaryLinks = [
   { href: "/catalog", label: "Каталог", icon: MapPin },
@@ -15,7 +16,7 @@ export function SiteFooter() {
         <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-start">
           <div>
             <Link href="/" className="inline-flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-2xl bg-white text-sm font-semibold text-pine">AS</span>
+              <BrandMark className="size-11 bg-white" />
               <span>
                 <span className="block text-xl font-semibold tracking-[0.18em]">ALAKOL SELECT</span>
                 <span className="mt-1 block text-sm text-white/58">Каталог зон отдыха</span>
