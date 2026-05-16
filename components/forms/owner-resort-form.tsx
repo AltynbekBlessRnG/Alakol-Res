@@ -63,24 +63,35 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
   const selectedAmenities = new Set(resort.amenities.map((item) => item.label));
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-      <form action={updateResortAction} className="space-y-5 rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
+    <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <form action={updateResortAction} className="space-y-5 rounded-[1.5rem] bg-white p-5 shadow-[0_18px_70px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
         <input type="hidden" name="id" value={resort.id} />
         <div className="grid gap-5 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Название</label>
-            <Input name="title" defaultValue={resort.title} />
+            <Input name="title" defaultValue={resort.title} placeholder="Например: Saffron Coast Family Club" />
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Короткое описание</label>
-            <TextareaWithCounter name="shortDescription" defaultValue={resort.shortDescription} minLength={45} className="min-h-[90px]" />
+            <TextareaWithCounter
+              name="shortDescription"
+              defaultValue={resort.shortDescription}
+              minLength={45}
+              className="min-h-[90px]"
+              placeholder="Например: Семейная зона отдыха в Акши, 120 м до воды, бассейн и детская площадка."
+            />
             <p className="mt-2 text-xs leading-5 text-black/45">
               Коротко и по делу: кому подходит место, чем оно привлекает, что там за атмосфера. Желательно от 45 символов.
             </p>
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Полное описание</label>
-            <TextareaWithCounter name="description" defaultValue={resort.description} minLength={110} />
+            <TextareaWithCounter
+              name="description"
+              defaultValue={resort.description}
+              minLength={110}
+              placeholder="Например: Подходит для семей с детьми и спокойного отдыха. На территории есть кафе, парковка, бассейн, беседки и номера разных категорий. До пляжа можно дойти за 2 минуты."
+            />
             <p className="mt-2 text-xs leading-5 text-black/45">
               Опишите формат отдыха, расстояние до воды, кому подойдёт место, что есть на территории и чем оно отличается. Желательно от 110 символов.
             </p>
@@ -91,15 +102,15 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Адрес</label>
-            <Input name="address" defaultValue={resort.address} />
+            <Input name="address" defaultValue={resort.address} placeholder="Например: посёлок Акши, первая линия, ул. Набережная 12" />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Мин. цена</label>
-            <Input type="number" name="minPrice" defaultValue={resort.minPrice} />
+            <Input type="number" name="minPrice" defaultValue={resort.minPrice} placeholder="Например: 28000" />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Макс. цена</label>
-            <Input type="number" name="maxPrice" defaultValue={resort.maxPrice} />
+            <Input type="number" name="maxPrice" defaultValue={resort.maxPrice} placeholder="Например: 65000" />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Питание</label>
@@ -111,23 +122,23 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Телефон</label>
-            <Input name="contactPhone" defaultValue={resort.contactPhone} />
+            <Input name="contactPhone" defaultValue={resort.contactPhone} placeholder="Например: +7 705 123 45 67" />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">WhatsApp</label>
-            <Input name="whatsapp" defaultValue={resort.whatsapp} />
+            <Input name="whatsapp" defaultValue={resort.whatsapp} placeholder="Например: 77051234567" />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Широта</label>
-            <Input type="number" step="0.001" name="latitude" defaultValue={resort.latitude} />
+            <Input type="number" step="0.001" name="latitude" defaultValue={resort.latitude} placeholder="Например: 46.163" />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Долгота</label>
-            <Input type="number" step="0.001" name="longitude" defaultValue={resort.longitude} />
+            <Input type="number" step="0.001" name="longitude" defaultValue={resort.longitude} placeholder="Например: 81.633" />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Расстояние до воды, м</label>
-            <Input type="number" name="distanceToLakeM" defaultValue={resort.distanceToLakeM} />
+            <Input type="number" name="distanceToLakeM" defaultValue={resort.distanceToLakeM} placeholder="Например: 120" />
           </div>
           <div className="grid gap-3 rounded-[1.5rem] bg-mist p-4">
             <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="familyFriendly" defaultChecked={resort.familyFriendly} />Семейный формат</label>
@@ -151,11 +162,21 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Что включено в цену</label>
-            <Textarea name="includedText" defaultValue={resort.includedText} className="min-h-[90px]" />
+            <Textarea
+              name="includedText"
+              defaultValue={resort.includedText}
+              className="min-h-[90px]"
+              placeholder="Например: проживание, завтрак, парковка, Wi-Fi, бассейн, лежаки на пляже"
+            />
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Правила проживания</label>
-            <Textarea name="rulesText" defaultValue={resort.rulesText} className="min-h-[90px]" />
+            <Textarea
+              name="rulesText"
+              defaultValue={resort.rulesText}
+              className="min-h-[90px]"
+              placeholder="Например: заезд после 14:00, выезд до 12:00, без шумных мероприятий после 23:00"
+            />
           </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Берег и пляж</label>
@@ -171,7 +192,7 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
               name="prices"
               defaultValue={resort.prices.map((price) => `${price.label} | ${price.amount} | ${price.description}`).join("\n")}
               className="min-h-[110px]"
-              placeholder={"Стандарт | 28000\nСемейный люкс | 52000 | за номер в сутки\nДомик | 45000"}
+              placeholder={"Стандарт | 28000 | за номер в сутки\nСемейный люкс | 52000 | до 4 гостей\nДомик у воды | 45000 | отдельный домик"}
             />
             <p className="mt-2 text-xs leading-5 text-black/45">
               Можно писать проще: <strong>название | цена</strong>. Описание необязательно, мы подставим его сами. Также поддерживаются форматы через
@@ -185,7 +206,7 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
         <button className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">Сохранить изменения</button>
       </form>
 
-      <div className="space-y-5">
+      <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
         <ImageUploadPanel resortId={resort.id} existingImages={resort.images} />
         <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
           <p className="text-xs uppercase tracking-[0.2em] text-black/45">Статус</p>
@@ -213,13 +234,6 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
               <button className="rounded-full bg-dune px-5 py-3 text-sm font-medium text-white">Отправить на модерацию</button>
             </form>
           )}
-        </div>
-
-        <div className="rounded-[2rem] bg-pine p-6 text-white shadow-glow">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/65">Демо доступ</p>
-          <p className="mt-4 text-sm leading-6 text-white/78">
-            Владелец: <strong>owner@alakol.kz</strong> / <strong>owner123</strong>.
-          </p>
         </div>
       </div>
     </div>

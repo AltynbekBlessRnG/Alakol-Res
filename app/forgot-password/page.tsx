@@ -17,11 +17,11 @@ export default async function ForgotPasswordPage({
         <p className="text-xs uppercase tracking-[0.2em] text-black/45">security</p>
         <h1 className="mt-4 font-display text-5xl text-ink">Сброс пароля</h1>
         <p className="mt-4 text-sm leading-7 text-black/60">
-          Для demo-режима токен придёт как внутреннее уведомление в аккаунт пользователя.
+          Укажите email аккаунта, чтобы запросить восстановление доступа.
         </p>
         {params.sent && <p className="mt-4 rounded-2xl bg-[#d6f0e4] px-4 py-3 text-sm text-pine">Если email существует, токен уже создан.</p>}
         <form action={requestPasswordResetAction} className="mt-6 space-y-4">
-          <input name="email" type="email" placeholder="owner@alakol.kz" className="w-full rounded-2xl border border-black/10 px-4 py-3 text-sm outline-none" />
+          <input name="email" type="email" placeholder="name@example.com" className="w-full rounded-2xl border border-black/10 px-4 py-3 text-sm outline-none" />
           <button className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">Запросить токен</button>
         </form>
         <Link href="/login" className="mt-6 inline-flex text-sm text-pine underline">Назад ко входу</Link>
