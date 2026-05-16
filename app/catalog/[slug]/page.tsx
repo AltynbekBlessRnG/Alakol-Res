@@ -48,6 +48,7 @@ export async function generateMetadata({ params }: ResortDetailPageProps): Promi
 export default async function ResortDetailPage({ params }: ResortDetailPageProps) {
   const { slug } = await params;
   const resort = await getResortBySlug(slug);
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
 
   if (!resort) notFound();
   const idealForText = resort.familyFriendly && resort.youthFriendly
@@ -343,6 +344,7 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
                 address={resort.address}
                 latitude={resort.latitude}
                 longitude={resort.longitude}
+                apiKey={googleMapsApiKey}
               />
             </div>
 
