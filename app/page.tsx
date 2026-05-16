@@ -67,10 +67,10 @@ export default async function HomePage() {
             <div className="max-w-3xl">
               <p className="text-sm uppercase tracking-[0.28em] text-white/68">alakol select</p>
               <h1 className="mt-5 max-w-4xl font-display text-4xl leading-[0.94] md:text-6xl xl:text-7xl">
-                Зоны отдыха на Алаколе в одном удобном каталоге.
+                Зоны отдыха на Алаколе
               </h1>
               <p className="mt-5 max-w-xl text-base leading-7 text-white/74 md:text-lg md:leading-8">
-                Смотрите фото, цены, карту, условия и расстояние до берега. Сравнивайте варианты и быстро выходите на заявку или WhatsApp.
+                Фото, цены, карта и быстрый контакт.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link href="/catalog" className="interactive-surface rounded-full bg-white px-6 py-3 text-sm font-medium text-ink shadow-[0_18px_45px_rgba(0,0,0,0.2)]">
@@ -84,27 +84,21 @@ export default async function HomePage() {
                 <div className="rounded-[1.4rem] border border-white/12 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">Объектов</p>
                   <p className="mt-2 font-display text-3xl">{resorts.length}</p>
-                  <p className="mt-1 text-xs leading-5 text-white/65">Актуальные карточки с фото и условиями.</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-white/12 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">По цене</p>
                   <p className="mt-2 font-display text-2xl">от {formatPrice(minPrice)} ₸</p>
-                  <p className="mt-1 text-xs leading-5 text-white/65">Быстрый вход в понятный бюджет.</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-white/12 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/55">Семейных</p>
                   <p className="mt-2 font-display text-3xl">{familyCount}</p>
-                  <p className="mt-1 text-xs leading-5 text-white/65">Подходят для детей и спокойного отдыха.</p>
                 </div>
               </div>
             </div>
 
             <div className="rounded-[2rem] border border-white/12 bg-[rgba(255,250,243,0.92)] p-5 text-ink shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-md md:p-6">
               <p className="text-xs uppercase tracking-[0.24em] text-black/38">быстрый поиск</p>
-              <h2 className="mt-3 font-display text-3xl leading-none text-ink md:text-4xl">Найти подходящий вариант</h2>
-              <p className="mt-3 max-w-sm text-sm leading-6 text-black/60">
-                Укажите бюджет или название объекта и перейдите к подборке с фильтрами, картой и карточками.
-              </p>
+              <h2 className="mt-3 font-display text-3xl leading-none text-ink md:text-4xl">Быстрый поиск</h2>
               <form action="/catalog" className="mt-5 space-y-3">
                 <input
                   name="q"
@@ -147,7 +141,7 @@ export default async function HomePage() {
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-black/45">рекомендуем посмотреть</p>
             <h2 className="mt-3 max-w-xl font-display text-4xl text-ink">
-              Популярные варианты, с которых удобно начать поиск
+              Популярные варианты
             </h2>
           </div>
           <Link href="/catalog" className="text-sm text-pine">
@@ -206,7 +200,7 @@ export default async function HomePage() {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,24,29,0.05),rgba(15,24,29,0.65))]" />
             <div className="absolute inset-x-0 bottom-0 p-8 text-white">
               <p className="text-xs uppercase tracking-[0.22em] text-white/62">для удобного подбора</p>
-              <h2 className="mt-3 max-w-md font-display text-5xl leading-none">Всё важное по объекту собрано в одном месте.</h2>
+              <h2 className="mt-3 max-w-md font-display text-5xl leading-none">Главное в одной карточке.</h2>
             </div>
           </div>
           <div className="grid gap-4">
@@ -214,17 +208,17 @@ export default async function HomePage() {
               {
                 icon: Waves,
                 title: "Понятные условия",
-                text: "В карточке сразу видно цену, берег, формат отдыха, питание и ключевые удобства."
+                text: "Цена, берег, питание и удобства."
               },
               {
                 icon: Sparkles,
                 title: "Удобный выбор",
-                text: "Можно сохранить понравившиеся варианты, сравнить объекты между собой и вернуться к ним позже."
+                text: "Сохраняйте и сравнивайте."
               },
               {
                 icon: MapPinned,
                 title: "Карта и контакты",
-                text: "У каждого объекта есть расположение на карте, телефон, WhatsApp и форма заявки."
+                text: "Карта, телефон, WhatsApp и заявка."
               }
             ].map((item) => (
               <div key={item.title} className="border-b border-black/8 pb-5 last:border-b-0 last:pb-0">
@@ -242,19 +236,12 @@ export default async function HomePage() {
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-black/40">о каталоге</p>
             <h2 className="mt-4 max-w-xl font-display text-5xl leading-[0.98] text-ink">
-              Alakol Select помогает быстро подобрать зону отдыха на Алаколе по реальным параметрам.
+              Alakol Select помогает выбрать место без долгого поиска.
             </h2>
           </div>
           <div className="space-y-4 text-base leading-8 text-black/66">
-            <p>
-              На сайте можно смотреть зоны отдыха на Алаколе по фото, цене, расстоянию до берега, типу размещения и удобствам. Это удобно для семей, пар и компаний, которые хотят быстро понять, подходит ли им объект.
-            </p>
-            <p>
-              В каждой карточке собраны основные параметры: что включено, какой берег, есть ли парковка, Wi-Fi, бассейн, детская зона, как выглядит территория и как быстро связаться с владельцем.
-            </p>
-            <p>
-              Каталог охватывает популярные направления Алаколя, включая Акши и Кабанбай, и помогает перейти к заявке без долгого поиска по мессенджерам и объявлениям.
-            </p>
+            <p>Смотрите фото, цены, берег, удобства и контакты.</p>
+            <p>Сохраняйте варианты, сравнивайте и отправляйте заявку.</p>
           </div>
         </div>
       </section>
@@ -263,7 +250,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-black/40">готовые подборки</p>
-              <h2 className="mt-3 font-display text-4xl text-ink">Быстрые страницы под популярные запросы</h2>
+              <h2 className="mt-3 font-display text-4xl text-ink">Быстрые подборки</h2>
             </div>
             <Link href="/catalog" className="text-sm text-pine">
               Открыть весь каталог
@@ -274,22 +261,22 @@ export default async function HomePage() {
               {
                 href: "/family-friendly-alakol",
                 title: "Семейный отдых",
-                text: "Подборка для тех, кто ищет спокойный формат отдыха и условия для детей."
+                text: "Спокойный формат для детей."
               },
               {
                 href: "/akshi-resorts",
                 title: "Зоны отдыха в Акши",
-                text: "Если вы хотите смотреть объекты отдельно по этой локации."
+                text: "Объекты в Акши."
               },
               {
                 href: "/resorts-with-pool",
                 title: "С бассейном",
-                text: "Для гостей, которым важен бассейн как часть отдыха."
+                text: "Объекты с бассейном."
               },
               {
                 href: "/first-line-alakol",
                 title: "Первая линия",
-                text: "Подборка объектов для тех, кто хочет быть ближе к воде."
+                text: "Ближе к воде."
               }
             ].map((item) => (
               <Link key={item.href} href={item.href} className="interactive-surface rounded-[1.6rem] bg-[#f7f1e6] p-5 hover:bg-[#efe5d3]">

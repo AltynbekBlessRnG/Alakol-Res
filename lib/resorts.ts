@@ -6,6 +6,12 @@ import {
   type ResortQueryFilters,
   type ResortWithRelations
 } from "@/lib/supabase/resorts";
+import {
+  getPublishedResortBySlug as getFallbackResortBySlug,
+  listFeaturedResorts as listFallbackFeaturedResorts,
+  listPublishedResorts as listFallbackPublishedResorts
+} from "@/lib/_dev-fallback-data";
+import { isSupabaseAdminConfigured } from "@/lib/supabase/env";
 
 const getCachedPublishedResorts = unstable_cache(
   async (filters: ResortQueryFilters) => listPublishedResortsFromSupabase(filters),
@@ -65,7 +71,38 @@ export function parseFilters(searchParams: Record<string, string | string[] | un
   };
 }
 
+function filterFallbackResorts(filters: CatalogFilters) {
+  const q = filters.q?.trim().toLowerCase();
+
+  return listFallbackPublishedResorts().filter((resort) => {
+    if (filters.zone && resort.zone !== filters.zone) return false;
+    if (typeof filters.minPrice === "number" && resort.minPrice < filters.minPrice) return false;
+    if (typeof filters.maxPrice === "number" && resort.minPrice > filters.maxPrice) return false;
+    if (filters.hasPool && !resort.hasPool) return false;
+    if (filters.hasWifi && !resort.hasWifi) return false;
+    if (filters.hasParking && !resort.hasParking) return false;
+    if (filters.hasKidsZone && !resort.hasKidsZone) return false;
+    if (filters.familyFriendly && !resort.familyFriendly) return false;
+    if (filters.youthFriendly && !resort.youthFriendly) return false;
+    if (q) {
+      const haystack = [
+        resort.title,
+        resort.shortDescription,
+        resort.zone,
+        resort.foodOptions,
+        resort.accommodationType
+      ].join(" ").toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
 export async function getCatalogResorts(filters: CatalogFilters): Promise<ResortWithRelations[]> {
+  if (!isSupabaseAdminConfigured()) {
+    return filterFallbackResorts(filters);
+  }
+
   try {
     return await getCachedPublishedResorts(filters);
   } catch (error) {
@@ -75,6 +112,10 @@ export async function getCatalogResorts(filters: CatalogFilters): Promise<Resort
 }
 
 export async function getFeaturedResorts(): Promise<ResortWithRelations[]> {
+  if (!isSupabaseAdminConfigured()) {
+    return listFallbackFeaturedResorts();
+  }
+
   try {
     return await getCachedFeaturedResorts();
   } catch (error) {
@@ -84,6 +125,10 @@ export async function getFeaturedResorts(): Promise<ResortWithRelations[]> {
 }
 
 export async function getResortBySlug(slug: string): Promise<ResortWithRelations | null> {
+  if (!isSupabaseAdminConfigured()) {
+    return getFallbackResortBySlug(slug);
+  }
+
   try {
     return await getCachedResortBySlug(slug);
   } catch (error) {

@@ -94,43 +94,57 @@ export function LoginForm() {
     await onLogin();
   }
 
+  function switchMode(nextMode: AuthMode) {
+    setMode(nextMode);
+    setError("");
+    setSuccess("");
+
+    if (nextMode === "register") {
+      setEmail("");
+      setPassword("");
+      setPasswordConfirm("");
+      setName("");
+      setCompany("");
+      setPhone("");
+      setWhatsapp("");
+      setAccountType("USER");
+    }
+  }
+
+  const title = mode === "register" ? "Создать аккаунт" : "Войти в аккаунт";
+  const subtitle =
+    mode === "register"
+      ? accountType === "OWNER"
+        ? "Кабинет владельца для управления объектами и заявками."
+        : "Аккаунт гостя для избранного, сравнения и отзывов."
+      : "Выберите демо-доступ или введите свои данные.";
+
   return (
     <div className="space-y-5">
-      <div className="inline-flex rounded-full border border-black/10 bg-[#f7f1e6] p-1">
+      <div>
+        <h2 className="text-2xl font-semibold leading-tight text-ink md:text-3xl">{title}</h2>
+        <p className="mt-2 text-sm leading-6 text-black/55">{subtitle}</p>
+      </div>
+
+      <div className="grid grid-cols-2 rounded-full border border-black/10 bg-[#f7f1e6] p-1 text-sm font-medium sm:inline-grid">
         <button
           type="button"
-          onClick={() => {
-            setMode("login");
-            setError("");
-            setSuccess("");
-          }}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition ${mode === "login" ? "bg-pine text-white" : "text-black/65"}`}
+          onClick={() => switchMode("login")}
+          className={`rounded-full px-4 py-2 transition ${mode === "login" ? "bg-pine text-white" : "text-black/65"}`}
         >
           Войти
         </button>
         <button
           type="button"
-          onClick={() => {
-            setMode("register");
-            setError("");
-              setSuccess("");
-              setEmail("");
-              setPassword("");
-              setPasswordConfirm("");
-              setName("");
-              setCompany("");
-              setPhone("");
-              setWhatsapp("");
-              setAccountType("USER");
-            }}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition ${mode === "register" ? "bg-pine text-white" : "text-black/65"}`}
+          onClick={() => switchMode("register")}
+          className={`rounded-full px-4 py-2 transition ${mode === "register" ? "bg-pine text-white" : "text-black/65"}`}
         >
           Регистрация
         </button>
       </div>
 
       {mode === "login" ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           {[
             { label: "Гость", email: "user@alakol.kz", password: "user12345" },
             { label: "Владелец", email: "owner@alakol.kz", password: "owner123" },
@@ -154,27 +168,26 @@ export function LoginForm() {
       <form onSubmit={onSubmit} className="space-y-4">
         {mode === "register" ? (
           <>
-            <div className="rounded-[1.6rem] border border-black/10 bg-[#f7f1e6] p-2">
-              <p className="px-3 pb-2 text-xs uppercase tracking-[0.18em] text-black/40">Тип аккаунта</p>
-              <div className="grid gap-2 md:grid-cols-2">
+            <div className="rounded-[1.25rem] border border-black/10 bg-[#f7f1e6] p-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
                   onClick={() => setAccountType("USER")}
-                  className={`rounded-[1.2rem] px-4 py-3 text-left transition ${accountType === "USER" ? "bg-pine text-white" : "bg-white text-black/65"}`}
+                  className={`rounded-[1rem] px-4 py-3 text-left transition ${accountType === "USER" ? "bg-pine text-white" : "bg-white text-black/65"}`}
                 >
                   <p className="text-sm font-medium">Гость</p>
                   <p className={`mt-1 text-xs leading-5 ${accountType === "USER" ? "text-white/75" : "text-black/45"}`}>
-                    Сохранять понравившиеся зоны и оставлять отзывы.
+                    Избранное, сравнение, отзывы.
                   </p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setAccountType("OWNER")}
-                  className={`rounded-[1.2rem] px-4 py-3 text-left transition ${accountType === "OWNER" ? "bg-pine text-white" : "bg-white text-black/65"}`}
+                  className={`rounded-[1rem] px-4 py-3 text-left transition ${accountType === "OWNER" ? "bg-pine text-white" : "bg-white text-black/65"}`}
                 >
-                  <p className="text-sm font-medium">Владелец зоны отдыха</p>
+                  <p className="text-sm font-medium">Владелец</p>
                   <p className={`mt-1 text-xs leading-5 ${accountType === "OWNER" ? "text-white/75" : "text-black/45"}`}>
-                    Добавлять свои объекты, редактировать карточки и получать заявки.
+                    Объекты, заявки, CRM.
                   </p>
                 </button>
               </div>
@@ -191,7 +204,7 @@ export function LoginForm() {
               <>
                 <div>
                   <label htmlFor={companyId} className="mb-2 block text-sm text-black/55">
-                    Название зоны отдыха или компании
+                    Название объекта или компании
                   </label>
                   <Input id={companyId} type="text" name="company" value={company} onChange={(event) => setCompany(event.target.value)} />
                 </div>
@@ -258,9 +271,18 @@ export function LoginForm() {
               ? (accountType === "OWNER" ? "Создать кабинет владельца" : "Создать аккаунт")
               : "Войти"}
         </button>
-        <Link href="/forgot-password" className="inline-flex text-sm text-pine underline">
-          Забыли пароль?
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <button
+            type="button"
+            onClick={() => switchMode(mode === "login" ? "register" : "login")}
+            className="text-black/55 underline decoration-black/20 underline-offset-4 transition hover:text-pine"
+          >
+            {mode === "login" ? "Создать аккаунт" : "Уже есть аккаунт"}
+          </button>
+          <Link href="/forgot-password" className="text-pine underline decoration-pine/30 underline-offset-4">
+            Забыли пароль?
+          </Link>
+        </div>
       </form>
     </div>
   );

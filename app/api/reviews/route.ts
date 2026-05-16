@@ -8,6 +8,7 @@ import {
   getUserByEmailFromSupabase
 } from "@/lib/supabase/data";
 import { checkRateLimit, addRateLimitHeaders } from "@/lib/rate-limit";
+import { reviewSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const rateLimit = await checkRateLimit(request, { prefix: "reviews", maxRequests: 5 });
@@ -27,24 +28,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401, headers });
   }
 
-  const body = (await request.json()) as {
-    resortId?: string;
-    rating?: number;
-    body?: string;
-  };
-
-  const resortId = String(body.resortId || "");
-  const reviewBody = String(body.body || "").trim();
-  const rating = Number(body.rating || 0);
-  const authorName = session.user.name?.trim() || "Гость";
-
-  if (!resortId || !reviewBody || rating < 1 || rating > 5) {
-    return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
+  const parsed = reviewSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ message: "Проверьте текст отзыва и оценку." }, { status: 400, headers });
   }
+
+  const { resortId, body: reviewBody, rating } = parsed.data;
+  const authorName = session.user.name?.trim() || "Гость";
 
   const resort = await getResortByIdFromSupabase(resortId);
   if (!resort) {
-    return NextResponse.json({ message: "Not found" }, { status: 404 });
+    return NextResponse.json({ message: "Объект не найден" }, { status: 404, headers });
   }
 
   await createReviewInSupabase({
@@ -72,3 +66,4 @@ export async function POST(request: Request) {
     message: "Отзыв отправлен на модерацию. Он появится в карточке после проверки."
   }, { headers });
 }
+

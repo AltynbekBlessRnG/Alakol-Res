@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 type ExistingImage = {
   id: string;
@@ -29,11 +30,15 @@ export function ImageUploadPanel({
     });
 
     if (!response.ok) {
-      setMessage("Не удалось загрузить фото.");
+      const nextMessage = "Не удалось загрузить фото.";
+      setMessage(nextMessage);
+      toast.error(nextMessage);
       return;
     }
 
-    setMessage("Фото загружены.");
+    const nextMessage = "Фото загружены.";
+    setMessage(nextMessage);
+    toast.success(nextMessage);
     startTransition(() => {
       router.refresh();
     });
@@ -42,9 +47,7 @@ export function ImageUploadPanel({
   return (
     <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
       <p className="text-xs uppercase tracking-[0.2em] text-black/45">Загрузка фото</p>
-      <p className="mt-3 text-sm leading-6 text-black/65">
-        Можно загрузить несколько файлов сразу. Они сохраняются локально в проект и остаются после перезапуска приложения.
-      </p>
+      <p className="mt-3 text-sm leading-6 text-black/65">PNG, JPG или WebP.</p>
       <form action={onUpload} className="mt-5 space-y-4">
         <input type="hidden" name="resortId" value={resortId} />
         <input

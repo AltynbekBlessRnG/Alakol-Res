@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Heart, Scale } from "lucide-react";
+import { toast } from "sonner";
 import { readPublicList, togglePublicListItem } from "@/lib/public-lists";
 
 let favoritesPromise: Promise<string[]> | null = null;
@@ -76,7 +77,9 @@ export function PublicActions({ slug, title, compact = false }: { slug: string; 
   async function onFavoriteClick() {
     setFavoritePending(true);
     if (!isUser) {
-      setFavorite(togglePublicListItem("favorites", { slug, title }, 12));
+      const nextFavorite = togglePublicListItem("favorites", { slug, title }, 12);
+      setFavorite(nextFavorite);
+      toast.success(nextFavorite ? "Добавлено в избранное" : "Убрано из избранного");
       setFavoritePending(false);
       return;
     }
@@ -88,6 +91,7 @@ export function PublicActions({ slug, title, compact = false }: { slug: string; 
     });
 
     if (!response.ok) {
+      toast.error("Не удалось обновить избранное");
       setFavoritePending(false);
       return;
     }
@@ -98,12 +102,15 @@ export function PublicActions({ slug, title, compact = false }: { slug: string; 
         : favoriteSlugsCache.filter((item) => item !== slug);
     }
     setFavorite(payload.favorite);
+    toast.success(payload.favorite ? "Добавлено в избранное" : "Убрано из избранного");
     setFavoritePending(false);
     window.dispatchEvent(new Event("alakol-public-list-updated"));
   }
 
   function onCompareClick() {
-    setCompared(togglePublicListItem("compare", { slug, title }, 4));
+    const nextCompared = togglePublicListItem("compare", { slug, title }, 4);
+    setCompared(nextCompared);
+    toast.success(nextCompared ? "Добавлено в сравнение" : "Убрано из сравнения");
     setComparePulse(true);
     window.setTimeout(() => setComparePulse(false), 220);
   }

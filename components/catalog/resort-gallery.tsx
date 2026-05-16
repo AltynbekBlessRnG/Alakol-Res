@@ -25,11 +25,11 @@ export function ResortGallery({ images }: { images: ResortGalleryImage[] }) {
   }
 
   return (
-    <section className="rounded-[2.2rem] bg-white p-5 shadow-[0_18px_70px_rgba(14,26,31,0.08)] md:p-6">
+    <section className="rounded-[1.35rem] bg-white p-4 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2.2rem] md:p-6">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-black/40">Галерея</p>
-          <h2 className="mt-3 font-display text-3xl text-ink md:text-4xl">Посмотрите, как выглядит зона отдыха</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-ink md:mt-3 md:text-4xl">Как выглядит зона отдыха</h2>
         </div>
         <div className="hidden items-center gap-2 md:flex">
           <button
@@ -51,8 +51,8 @@ export function ResortGallery({ images }: { images: ResortGalleryImage[] }) {
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-[2rem] bg-[#f7f1e6]">
-        <div className="relative aspect-[1.1] md:aspect-[1.7]">
+      <div className="mt-4 overflow-hidden rounded-[1.2rem] bg-[#f7f1e6] md:mt-6 md:rounded-[2rem]">
+        <div className="relative aspect-[1.15] md:aspect-[1.7]">
           <Image
             key={activeImage.id}
             src={activeImage.url}

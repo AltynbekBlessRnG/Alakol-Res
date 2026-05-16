@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import {
   createAnalyticsEventInSupabase,
   createLeadInSupabase,
@@ -7,13 +6,8 @@ import {
   getResortByIdFromSupabase
 } from "@/lib/supabase/data";
 import { checkRateLimit, addRateLimitHeaders } from "@/lib/rate-limit";
-
-const schema = z.object({
-  resortId: z.string(),
-  guestName: z.string().min(2),
-  phone: z.string().min(5),
-  note: z.string().optional()
-});
+import { notifyLeadToTelegram } from "@/lib/telegram";
+import { leadSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const rateLimit = await checkRateLimit(request, { prefix: "leads", maxRequests: 5 });
@@ -29,7 +23,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const data = schema.parse(await request.json());
+    const parsed = leadSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ message: "Проверьте имя и телефон." }, { status: 400, headers });
+    }
+
+    const data = parsed.data;
     const id = await createLeadInSupabase(data);
     const resort = await getResortByIdFromSupabase(data.resortId);
 
@@ -41,6 +40,9 @@ export async function POST(request: Request) {
         body: `${data.guestName} оставил заявку по объекту ${resort.title}.`,
         href: "/owner"
       });
+    }
+
+    if (resort) {
       await createAnalyticsEventInSupabase({
         eventType: "lead_created",
         resortId: data.resortId,
@@ -49,8 +51,18 @@ export async function POST(request: Request) {
       });
     }
 
+    await notifyLeadToTelegram({
+      leadId: id,
+      resortTitle: resort?.title,
+      guestName: data.guestName,
+      phone: data.phone,
+      note: data.note
+    });
+
     return NextResponse.json({ id, status: "new", ...data }, { status: 201, headers });
-  } catch {
-    return NextResponse.json({ message: "Проверьте имя и телефон." }, { status: 400, headers });
+  } catch (error) {
+    console.error("Lead API error:", error);
+    return NextResponse.json({ message: "Не удалось отправить заявку. Попробуйте еще раз." }, { status: 400, headers });
   }
 }
+

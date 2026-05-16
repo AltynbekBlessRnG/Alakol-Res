@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import L from "leaflet";
+import { escapeMapHtml, loadGoogleMaps } from "@/components/map/google-maps-loader";
 
 type MapResort = {
   id: string;
@@ -14,51 +14,81 @@ type MapResort = {
 };
 
 function getCenter(resorts: MapResort[]) {
-  if (!resorts.length) return [46.14, 81.6] as [number, number];
+  if (!resorts.length) return { lat: 46.14, lng: 81.6 };
   const lat = resorts.reduce((sum, item) => sum + item.latitude, 0) / resorts.length;
   const lng = resorts.reduce((sum, item) => sum + item.longitude, 0) / resorts.length;
-  return [lat, lng] as [number, number];
+  return { lat, lng };
 }
 
-export function CatalogMapClient({ resorts }: { resorts: MapResort[] }) {
+export function CatalogMapClient({ resorts, apiKey }: { resorts: MapResort[]; apiKey?: string }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !apiKey) return;
 
-    const map = L.map(mapRef.current, {
-      center: getCenter(resorts),
-      zoom: 11,
-      scrollWheelZoom: true
-    });
+    let cancelled = false;
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
+    loadGoogleMaps(apiKey)
+      .then(() => {
+        if (cancelled || !mapRef.current || !window.google?.maps) return;
 
-    resorts.forEach((resort) => {
-      L.circleMarker([resort.latitude, resort.longitude], {
-        color: "#17352c",
-        fillColor: "#a26a42",
-        fillOpacity: 0.95,
-        radius: 8,
-        weight: 2
+        const map = new window.google.maps.Map(mapRef.current, {
+          center: getCenter(resorts),
+          zoom: 11,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          streetViewControl: false,
+          clickableIcons: false,
+          gestureHandling: "greedy",
+          styles: [
+            { featureType: "poi", stylers: [{ visibility: "off" }] },
+            { featureType: "transit", stylers: [{ visibility: "off" }] }
+          ]
+        });
+
+        const bounds = new window.google.maps.LatLngBounds();
+
+        resorts.forEach((resort) => {
+          const position = { lat: resort.latitude, lng: resort.longitude };
+          bounds.extend(position);
+
+          const marker = new window.google!.maps.Marker({
+            position,
+            map,
+            title: resort.title
+          });
+          const infoWindow = new window.google!.maps.InfoWindow({
+            content: `<div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 220px;">
+              <div style="font-weight:700;">${escapeMapHtml(resort.title)}</div>
+              <div style="font-size:12px;opacity:.65;margin-top:4px;">${escapeMapHtml(resort.zone)}</div>
+              <div style="margin-top:8px;">от ${new Intl.NumberFormat("ru-RU").format(resort.minPrice)} ₸</div>
+              <div style="margin-top:8px;"><a href="/catalog/${encodeURIComponent(resort.slug)}" style="color:#17352c;text-decoration:underline;">Открыть карточку</a></div>
+            </div>`
+          });
+
+          marker.addListener("click", () => infoWindow.open({ anchor: marker, map }));
+        });
+
+        if (resorts.length > 1) {
+          map.fitBounds(bounds);
+        }
       })
-        .addTo(map)
-        .bindPopup(
-          `<div style="font-family: ui-sans-serif, system-ui, sans-serif;">
-            <div style="font-weight:600;">${resort.title}</div>
-            <div style="font-size:12px;opacity:.65;margin-top:4px;">${resort.zone}</div>
-            <div style="margin-top:8px;">от ${new Intl.NumberFormat("ru-RU").format(resort.minPrice)} ₸</div>
-            <div style="margin-top:8px;"><a href="/catalog/${resort.slug}" style="color:#17352c;text-decoration:underline;">Открыть карточку</a></div>
-          </div>`
-        );
-    });
+      .catch((error) => {
+        console.error(error);
+      });
 
     return () => {
-      map.remove();
+      cancelled = true;
     };
-  }, [resorts]);
+  }, [apiKey, resorts]);
 
-  return <div ref={mapRef} className="h-[320px] w-full md:h-[420px]" />;
+  if (!apiKey) {
+    return (
+      <div className="flex h-[320px] w-full items-center justify-center bg-[#edf6f2] px-6 text-center text-sm text-pine md:h-[460px]">
+        Добавьте GOOGLE_MAPS_API_KEY в env.
+      </div>
+    );
+  }
+
+  return <div ref={mapRef} data-google-map-ready className="h-[320px] w-full md:h-[460px]" />;
 }

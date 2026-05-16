@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 type LeadCrmFormProps = {
   lead: {
@@ -47,12 +48,16 @@ export function LeadCrmForm({ lead }: LeadCrmFormProps) {
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-      setError(payload?.message ?? "Не удалось обновить лид.");
+      const nextError = payload?.message ?? "Не удалось обновить лид.";
+      setError(nextError);
+      toast.error(nextError);
       setIsSubmitting(false);
       return;
     }
 
-    setMessage("Лид обновлён.");
+    const nextMessage = "Лид обновлен.";
+    setMessage(nextMessage);
+    toast.success(nextMessage);
     startTransition(() => {
       router.refresh();
     });

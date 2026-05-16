@@ -13,66 +13,69 @@ export function ResortCard({ resort }: ResortCardProps) {
   const image = resort.images[0];
 
   return (
-    <article className="group interactive-surface relative overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_70px_rgba(14,26,31,0.08)] hover:shadow-[0_30px_100px_rgba(14,26,31,0.16)]">
+    <article className="group relative overflow-hidden rounded-[1.35rem] border border-black/8 bg-white shadow-[0_12px_36px_rgba(14,26,31,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(14,26,31,0.14)]">
       <Link href={`/catalog/${resort.slug}`} className="absolute inset-0 z-10" aria-label={`Открыть ${resort.title}`} />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,155,53,0.12),transparent_38%)] opacity-0 transition duration-500 group-hover:opacity-100" />
-      <div className="relative h-72 overflow-hidden">
-        {image && (
-          <Image
-            src={image.url}
-            alt={image.alt}
-            fill
-            className="object-cover transition duration-700 group-hover:scale-110 group-hover:-rotate-[0.6deg]"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent transition duration-500 group-hover:from-black/78" />
-        <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3 text-white">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/70 transition duration-300 group-hover:text-white/90">{resort.zone}</p>
-            <h3 className="mt-2 font-display text-2xl transition duration-300 group-hover:translate-x-1">{resort.title}</h3>
+
+      <div className="grid gap-0 md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="relative h-52 overflow-hidden bg-mist md:h-full md:min-h-[245px] xl:h-56 2xl:h-full">
+          {image && (
+            <Image
+              src={image.url}
+              alt={image.alt}
+              fill
+              className="object-cover transition duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, 420px"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/64 via-black/8 to-transparent" />
+          <div className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1.5 text-xs font-semibold text-ink backdrop-blur">
+            {resort.zone}
           </div>
-          <div className="rounded-full bg-white/12 px-4 py-2 text-sm backdrop-blur-sm transition duration-300 group-hover:bg-white/18 group-hover:-translate-y-1">
-            от {formatPrice(resort.minPrice)} ₸
-          </div>
-        </div>
-      </div>
-      <div className="relative z-20 space-y-4 p-6">
-        <p className="text-sm leading-6 text-black/65 transition duration-300 group-hover:text-black/78">{resort.shortDescription}</p>
-        {resort.approvedReviewsCount > 0 && (
-          <div className="flex items-center gap-2 text-sm text-ink transition duration-300 group-hover:translate-x-1">
-            <Star size={16} className="fill-[#d49b35] text-[#d49b35]" />
-            <span>{resort.ratingAverage}</span>
-            <span className="text-black/50">· {resort.approvedReviewsCount} отзывов</span>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-2 text-xs text-black/70">
-          {resort.amenities.slice(0, 4).map((amenity) => (
-            <span key={amenity.id} className="rounded-full bg-mist px-3 py-2 transition duration-300 group-hover:bg-[#ece2d2]">
-              {amenity.label}
-            </span>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-4 text-sm text-black/58 transition duration-300 group-hover:text-black/70">
-          <span className="flex items-center gap-2 transition duration-300 group-hover:translate-x-1">
-            <MapPin size={16} />
-            {resort.distanceToLakeM} м до воды
-          </span>
-          <span className="flex items-center gap-2 transition duration-300 group-hover:translate-x-1">
-            <Waves size={16} />
-            {resort.foodOptions}
-          </span>
-          {resort.hasWifi && (
-            <span className="flex items-center gap-2 transition duration-300 group-hover:translate-x-1">
-              <Wifi size={16} />
-              Wi-Fi
-            </span>
+          {resort.approvedReviewsCount > 0 && (
+            <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
+              <Star size={13} className="fill-[#f2c45b] text-[#f2c45b]" />
+              {resort.ratingAverage}
+            </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/8 pt-4">
-          <div className="text-sm font-medium text-pine transition duration-300 group-hover:translate-x-2">
-            Открыть карточку
+
+        <div className="pointer-events-none relative z-20 flex min-w-0 flex-col gap-4 p-4 md:p-5">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-xl font-semibold leading-tight text-ink md:text-2xl">{resort.title}</h3>
+              <p className="shrink-0 rounded-full bg-[#edf6f2] px-3 py-1.5 text-sm font-semibold text-pine">
+                от {formatPrice(resort.minPrice)} ₸
+              </p>
+            </div>
+            <p className="mt-2 line-clamp-2 text-sm leading-6 text-black/62">{resort.shortDescription}</p>
           </div>
-          <PublicActions slug={resort.slug} title={resort.title} compact />
+
+          <div className="grid grid-cols-2 gap-2 text-xs text-black/62">
+            <span className="flex items-center gap-2 rounded-2xl bg-mist px-3 py-2">
+              <MapPin size={14} />
+              {resort.distanceToLakeM} м
+            </span>
+            <span className="flex items-center gap-2 rounded-2xl bg-mist px-3 py-2">
+              <Waves size={14} />
+              {resort.foodOptions}
+            </span>
+            {resort.hasWifi && (
+              <span className="flex items-center gap-2 rounded-2xl bg-mist px-3 py-2">
+                <Wifi size={14} />
+                Wi-Fi
+              </span>
+            )}
+            {resort.amenities[0] && (
+              <span className="truncate rounded-2xl bg-mist px-3 py-2">{resort.amenities[0].label}</span>
+            )}
+          </div>
+
+          <div className="mt-auto flex items-center justify-between gap-3 border-t border-black/8 pt-3">
+            <span className="text-sm font-medium text-pine">Открыть карточку</span>
+            <div className="pointer-events-auto relative z-30">
+              <PublicActions slug={resort.slug} title={resort.title} compact />
+            </div>
+          </div>
         </div>
       </div>
     </article>

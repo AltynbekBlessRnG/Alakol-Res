@@ -35,6 +35,10 @@ export default defineConfig({
     ? undefined
     : {
         command: "npx next dev --hostname localhost --port 3000",
+        env: {
+          NEXTAUTH_SECRET: "playwright-local-secret",
+          NEXTAUTH_URL: "http://localhost:3000"
+        },
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000

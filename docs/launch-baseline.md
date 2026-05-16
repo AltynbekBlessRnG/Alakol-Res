@@ -1,5 +1,11 @@
 # Launch Baseline
 
+## Data Source Decision
+
+- Production uses Supabase/PostgreSQL as the source of truth.
+- The SQLite fallback in `lib/_dev-fallback-data.ts` is only for local development and demo runs when Supabase environment variables are not configured.
+- Lead delivery can optionally send Telegram alerts when `TELEGRAM_BOT_TOKEN` and `TELEGRAM_LEADS_CHAT_ID` are set. Empty values must not block lead creation.
+
 ## Что должно быть готово перед публичным показом
 
 - Главная загружается без server error и выглядит цельно на desktop и mobile.

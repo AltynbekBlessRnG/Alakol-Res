@@ -19,6 +19,7 @@ type ResortLocationMapProps = {
   address: string;
   latitude: number;
   longitude: number;
+  apiKey?: string;
 };
 
 export function ResortLocationMap(props: ResortLocationMapProps) {

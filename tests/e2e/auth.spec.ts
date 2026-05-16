@@ -6,7 +6,7 @@ test.describe("auth and dashboards", () => {
 
     await page.getByLabel("Email").fill("owner@alakol.kz");
     await page.getByLabel("Пароль").fill("owner123");
-    await page.getByRole("button", { name: /войти/i }).click();
+    await page.locator("form").getByRole("button", { name: /войти/i }).click();
 
     await expect(page).toHaveURL(/\/owner$/);
     await expect(page.getByRole("heading", { name: /ваши объекты и входящие заявки/i })).toBeVisible();
@@ -18,7 +18,7 @@ test.describe("auth and dashboards", () => {
 
     await page.getByLabel("Email").fill("admin@alakol.kz");
     await page.getByLabel("Пароль").fill("admin123");
-    await page.getByRole("button", { name: /войти/i }).click();
+    await page.locator("form").getByRole("button", { name: /войти/i }).click();
 
     await expect(page).toHaveURL(/\/admin$/);
     await expect(page.getByRole("heading", { name: /очередь модерации и аудит изменений/i })).toBeVisible();

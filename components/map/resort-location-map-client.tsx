@@ -1,51 +1,75 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import L from "leaflet";
+import { escapeMapHtml, loadGoogleMaps } from "@/components/map/google-maps-loader";
 
 type ResortLocationMapClientProps = {
   title: string;
   address: string;
   latitude: number;
   longitude: number;
+  apiKey?: string;
 };
 
-export function ResortLocationMapClient({ title, address, latitude, longitude }: ResortLocationMapClientProps) {
+export function ResortLocationMapClient({ title, address, latitude, longitude, apiKey }: ResortLocationMapClientProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !apiKey) return;
 
-    const map = L.map(mapRef.current, {
-      center: [latitude, longitude],
-      zoom: 13,
-      scrollWheelZoom: true
-    });
+    let cancelled = false;
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
+    loadGoogleMaps(apiKey)
+      .then(() => {
+        if (cancelled || !mapRef.current || !window.google?.maps) return;
 
-    L.circleMarker([latitude, longitude], {
-      color: "#17352c",
-      fillColor: "#4db0cb",
-      fillOpacity: 0.95,
-      radius: 10,
-      weight: 2
-    })
-      .addTo(map)
-      .bindPopup(
-        `<div style="font-family: ui-sans-serif, system-ui, sans-serif;">
-          <div style="font-weight:600;">${title}</div>
-          <div style="font-size:12px;opacity:.65;margin-top:4px;">${address}</div>
-        </div>`
-      )
-      .openPopup();
+        const position = { lat: latitude, lng: longitude };
+        const map = new window.google.maps.Map(mapRef.current, {
+          center: position,
+          zoom: 14,
+          mapTypeControl: false,
+          fullscreenControl: true,
+          streetViewControl: false,
+          clickableIcons: false,
+          gestureHandling: "greedy",
+          styles: [
+            { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+            { featureType: "transit", stylers: [{ visibility: "off" }] }
+          ]
+        });
+
+        const marker = new window.google.maps.Marker({
+          position,
+          map,
+          title
+        });
+
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: `<div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 220px;">
+            <div style="font-weight:700;">${escapeMapHtml(title)}</div>
+            <div style="font-size:12px;opacity:.65;margin-top:4px;">${escapeMapHtml(address)}</div>
+          </div>`
+        });
+
+        marker.addListener("click", () => infoWindow.open({ anchor: marker, map }));
+        infoWindow.open({ anchor: marker, map });
+      })
+      .catch((error) => {
+        console.error(error);
+      });
 
     return () => {
-      map.remove();
+      cancelled = true;
     };
-  }, [address, latitude, longitude, title]);
+  }, [address, apiKey, latitude, longitude, title]);
 
-  return <div ref={mapRef} className="h-[360px] w-full md:h-[540px]" />;
+  if (!apiKey) {
+    return (
+      <div className="flex h-[360px] w-full items-center justify-center bg-[#edf6f2] px-6 text-center text-sm text-pine md:h-[540px]">
+        Добавьте GOOGLE_MAPS_API_KEY в env.
+      </div>
+    );
+  }
+
+  return <div ref={mapRef} data-google-map-ready className="h-[360px] w-full md:h-[540px]" />;
 }

@@ -148,7 +148,7 @@ model Review {
   authorName String
   rating     Int
   body       String
-  status     ReviewStatus @default(pending)
+  status     ReviewStatus @default(PENDING)
   createdAt  DateTime     @default(now())
   resort     Resort       @relation(fields: [resortId], references: [id], onDelete: Cascade)
   user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
