@@ -490,92 +490,130 @@ export async function POST() {
     return NextResponse.json({ message: "Supabase is not configured" }, { status: 500 });
   }
 
-  const resortIds = resorts.map((resort) => resort.id);
+  async function must<T>(query: PromiseLike<{ data: T; error: { message: string } | null }>, step: string) {
+    const result = await query;
+    if (result.error) {
+      throw new Error(`${step}: ${result.error.message}`);
+    }
+    return result.data;
+  }
+
+  try {
   const now = new Date().toISOString();
 
-  await supabase.from("notifications").delete().in("user_id", [ownerId, adminId, userId]);
-  await supabase.from("favorites").delete().in("user_id", [ownerId, adminId, userId]);
-  await supabase.from("reviews").delete().in("resort_id", resortIds);
-  await supabase.from("leads").delete().in("resort_id", resortIds);
-  await supabase.from("moderation_reviews").delete().in("resort_id", resortIds);
-  await supabase.from("resort_prices").delete().in("resort_id", resortIds);
-  await supabase.from("resort_amenities").delete().in("resort_id", resortIds);
-  await supabase.from("resort_images").delete().in("resort_id", resortIds);
-  await supabase.from("resorts").delete().in("id", resortIds);
+  const ensureUser = async (input: { fallbackId: string; email: string; name: string; password: string; role: "OWNER" | "ADMIN" | "USER" }) => {
+    const { data: existing, error: selectError } = await supabase.from("users").select("id").eq("email", input.email).maybeSingle();
+    if (selectError) throw new Error(`select ${input.email}: ${selectError.message}`);
 
-  await supabase.from("users").upsert([
-    {
-      id: ownerId,
-      email: "owner@alakol.kz",
-      name: "Sunrise Travel",
-      password_hash: bcrypt.hashSync("owner123", 10),
-      role: "OWNER",
-      created_at: now,
-      updated_at: now
-    },
-    {
-      id: adminId,
-      email: "admin@alakol.kz",
-      name: "Alakol Admin",
-      password_hash: bcrypt.hashSync("admin123", 10),
-      role: "ADMIN",
-      created_at: now,
-      updated_at: now
-    },
-    {
-      id: userId,
-      email: "user@alakol.kz",
-      name: "Аружан",
-      password_hash: bcrypt.hashSync("user12345", 10),
-      role: "USER",
-      created_at: now,
-      updated_at: now
+    const password_hash = bcrypt.hashSync(input.password, 10);
+    if (existing?.id) {
+      await must(
+        supabase.from("users").update({ name: input.name, password_hash, role: input.role, updated_at: now }).eq("id", existing.id),
+        `update ${input.email}`
+      );
+      return existing.id as string;
     }
-  ]);
 
-  await supabase.from("owner_profiles").upsert({
-    id: ownerProfileId,
-    user_id: ownerId,
-    company: "Sunrise Travel",
-    phone: "+7 777 100 20 30",
-    whatsapp: "7771002030",
-    created_at: now,
-    updated_at: now
-  });
+    await must(
+      supabase.from("users").insert({
+        id: input.fallbackId,
+        email: input.email,
+        name: input.name,
+        password_hash,
+        role: input.role,
+        created_at: now,
+        updated_at: now
+      }),
+      `insert ${input.email}`
+    );
+    return input.fallbackId;
+  };
 
-  await supabase.from("resorts").insert(
+  const realOwnerId = await ensureUser({ fallbackId: ownerId, email: "owner@alakol.kz", name: "Sunrise Travel", password: "owner123", role: "OWNER" });
+  const realAdminId = await ensureUser({ fallbackId: adminId, email: "admin@alakol.kz", name: "Alakol Admin", password: "admin123", role: "ADMIN" });
+  const realUserId = await ensureUser({ fallbackId: userId, email: "user@alakol.kz", name: "Аружан", password: "user12345", role: "USER" });
+
+  const { data: existingOwnerProfile, error: ownerProfileError } = await supabase
+    .from("owner_profiles")
+    .select("id")
+    .eq("user_id", realOwnerId)
+    .maybeSingle();
+  if (ownerProfileError) throw new Error(`select owner profile: ${ownerProfileError.message}`);
+
+  const realOwnerProfileId = (existingOwnerProfile?.id as string | undefined) ?? ownerProfileId;
+  if (existingOwnerProfile?.id) {
+    await must(
+      supabase
+        .from("owner_profiles")
+        .update({ company: "Sunrise Travel", phone: "+7 777 100 20 30", whatsapp: "7771002030", updated_at: now })
+        .eq("id", realOwnerProfileId),
+      "update owner profile"
+    );
+  } else {
+    await must(
+      supabase.from("owner_profiles").insert({
+        id: realOwnerProfileId,
+        user_id: realOwnerId,
+        company: "Sunrise Travel",
+        phone: "+7 777 100 20 30",
+        whatsapp: "7771002030",
+        created_at: now,
+        updated_at: now
+      }),
+      "insert owner profile"
+    );
+  }
+
+  const existingResorts = await must(supabase.from("resorts").select("id"), "select existing resorts");
+  const existingResortIds = ((existingResorts as Array<{ id: string }> | null) ?? []).map((resort) => resort.id);
+
+  if (existingResortIds.length) {
+    await must(supabase.from("reviews").delete().in("resort_id", existingResortIds), "delete reviews");
+    await must(supabase.from("leads").delete().in("resort_id", existingResortIds), "delete leads");
+    await must(supabase.from("moderation_reviews").delete().in("resort_id", existingResortIds), "delete moderation reviews");
+    await must(supabase.from("resort_prices").delete().in("resort_id", existingResortIds), "delete prices");
+    await must(supabase.from("resort_amenities").delete().in("resort_id", existingResortIds), "delete amenities");
+    await must(supabase.from("resort_images").delete().in("resort_id", existingResortIds), "delete images");
+    await must(supabase.from("favorites").delete().in("resort_id", existingResortIds), "delete favorites");
+    await must(supabase.from("analytics_events").delete().in("resort_id", existingResortIds), "delete analytics");
+    await must(supabase.from("resorts").delete().in("id", existingResortIds), "delete resorts");
+  }
+
+  await must(supabase.from("notifications").delete().in("user_id", [realOwnerId, realAdminId, realUserId]), "delete notifications");
+
+  await must(supabase.from("resorts").insert(
     resorts.map((resort) => ({
       ...resort,
-      owner_profile_id: ownerProfileId,
+      owner_profile_id: realOwnerProfileId,
       created_at: now,
       updated_at: now
     }))
-  );
+  ), "insert resorts");
 
-  await supabase.from("resort_images").insert(resorts.flatMap((resort, index) => resortImages(resort.id, index)));
-  await supabase.from("resort_amenities").insert(resorts.flatMap((resort) => resortAmenities(resort.id, resort)));
-  await supabase.from("resort_prices").insert(resorts.flatMap((resort) => resortPrices(resort.id, resort)));
+  await must(supabase.from("resort_images").insert(resorts.flatMap((resort, index) => resortImages(resort.id, index))), "insert images");
+  await must(supabase.from("resort_amenities").insert(resorts.flatMap((resort) => resortAmenities(resort.id, resort))), "insert amenities");
+  await must(supabase.from("resort_prices").insert(resorts.flatMap((resort) => resortPrices(resort.id, resort))), "insert prices");
 
-  await supabase.from("reviews").insert(
+  await must(supabase.from("reviews").insert(
     resorts.slice(0, 10).map((resort, index) => ({
       id: `review-seed-${index + 1}`,
       resort_id: resort.id,
-      user_id: userId,
+      user_id: realUserId,
       author_name: ["Аружан", "Мадина", "Талгат", "Айгерим", "Нуртас"][index % 5],
       rating: index % 3 === 0 ? 5 : 4,
       body: `${resort.title} понравился по атмосфере и расположению. Описание на сайте совпало с ожиданиями, бронировать было удобно.`,
       status: "approved",
       created_at: now
     }))
-  );
+  ), "insert reviews");
 
-  await supabase.from("favorites").insert([
-    { id: "favorite-seed-1", user_id: userId, resort_id: "resort-1", created_at: now },
-    { id: "favorite-seed-2", user_id: userId, resort_id: "resort-4", created_at: now },
-    { id: "favorite-seed-3", user_id: userId, resort_id: "resort-13", created_at: now }
-  ]);
+  await must(supabase.from("favorites").insert([
+    { id: "favorite-seed-1", user_id: realUserId, resort_id: "resort-1", created_at: now },
+    { id: "favorite-seed-2", user_id: realUserId, resort_id: "resort-4", created_at: now },
+    { id: "favorite-seed-3", user_id: realUserId, resort_id: "resort-13", created_at: now }
+  ]), "insert favorites");
 
-  await supabase.from("leads").insert({
+  await must(supabase.from("leads").insert({
     id: "lead-seed-1",
     resort_id: "resort-1",
     guest_name: "Айгерим",
@@ -585,12 +623,12 @@ export async function POST() {
     status: "new",
     created_at: now,
     updated_at: now
-  });
+  }), "insert lead");
 
-  await supabase.from("notifications").insert([
+  await must(supabase.from("notifications").insert([
     {
       id: "notification-seed-1",
-      user_id: ownerId,
+      user_id: realOwnerId,
       type: "lead_created",
       title: "Новая заявка",
       body: "Появилась тестовая заявка по Aqua Marina Resort.",
@@ -599,14 +637,18 @@ export async function POST() {
     },
     {
       id: "notification-seed-2",
-      user_id: adminId,
+      user_id: realAdminId,
       type: "resort_published",
       title: "Каталог наполнен",
       body: "В каталоге опубликовано 13 демо-объектов.",
       href: "/admin",
       created_at: now
     }
-  ]);
+  ]), "insert notifications");
 
   return NextResponse.json({ ok: true, published: resorts.length });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown seed error";
+    return NextResponse.json({ ok: false, message }, { status: 500 });
+  }
 }
