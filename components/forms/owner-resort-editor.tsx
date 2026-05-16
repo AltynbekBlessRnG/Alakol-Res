@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { toast } from "sonner";
 import {
   BedDouble,
   Camera,
@@ -24,6 +25,7 @@ type ResortEditorProps = {
   resort: Resort & { amenities: ResortAmenity[]; prices: ResortPrice[]; images: ResortImage[] };
   completeness: { isReady: boolean; missing: string[] };
   error?: string;
+  notice?: "saved" | "submitted";
   updateAction: (formData: FormData) => void | Promise<void>;
   submitAction: (formData: FormData) => void | Promise<void>;
 };
@@ -70,7 +72,7 @@ const TRANSFER_OPTIONS = [
   "Помогаем организовать трансфер"
 ];
 
-export function OwnerResortEditor({ resort, completeness, error, updateAction, submitAction }: ResortEditorProps) {
+export function OwnerResortEditor({ resort, completeness, error, notice, updateAction, submitAction }: ResortEditorProps) {
   const cover = resort.images.find((image) => image.isCover || image.kind === "cover") ?? resort.images[0];
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -126,6 +128,12 @@ export function OwnerResortEditor({ resort, completeness, error, updateAction, s
 
   const setField = (field: keyof Draft, value: string) => setDraft((current) => ({ ...current, [field]: value }));
 
+  useEffect(() => {
+    if (notice === "saved") toast.success("Изменения сохранены");
+    if (notice === "submitted") toast.success("Карточка отправлена на проверку");
+    if (error) toast.error("Пока нельзя отправить на проверку");
+  }, [error, notice]);
+
   return (
     <div className="bg-[#f7f1e6] pb-24 text-ink">
       <form id="owner-resort-editor-form" action={updateAction} className="hidden">
@@ -143,11 +151,21 @@ export function OwnerResortEditor({ resort, completeness, error, updateAction, s
         />
       </form>
 
-      {error && (
+      {(error || notice) && (
         <div className="mx-auto max-w-7xl px-4 pt-6 md:px-8">
-          <p className="rounded-[1.25rem] bg-[#f7d7d7] px-4 py-3 text-sm text-[#8f2c2c]">
-            Для отправки на проверку не хватает: {error}
-          </p>
+          <div className={`rounded-[1.5rem] px-5 py-4 shadow-[0_18px_55px_rgba(14,26,31,0.10)] ${error ? "bg-[#ffe2df] text-[#8f2c2c]" : "bg-[#e1f4e7] text-pine"}`}>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 size={20} className="mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">
+                  {error ? "Нужно заполнить еще несколько полей" : notice === "submitted" ? "Карточка ушла на проверку" : "Изменения сохранены"}
+                </p>
+                <p className="mt-1 text-sm leading-6 opacity-80">
+                  {error ? `Не хватает: ${error}` : notice === "submitted" ? "Администратор проверит объект перед публикацией." : "Можно продолжать редактировать страницу."}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -317,10 +335,7 @@ export function OwnerResortEditor({ resort, completeness, error, updateAction, s
             {resort.status !== RESORT_STATUS.PUBLISHED && (
               <form action={submitAction} className="mt-5">
                 <input type="hidden" name="id" value={resort.id} />
-                <button className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-dune px-5 py-3 text-sm font-medium text-white">
-                  <Send size={16} />
-                  Отправить на проверку
-                </button>
+                <ReviewSubmitButton />
               </form>
             )}
           </div>
@@ -400,10 +415,11 @@ function EditPanel({ editing, draft, setField, setEditing }: {
   if (!editing || ["amenities", "audience", "accommodation", "included"].includes(editing)) return null;
   const common = "w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-lake focus:ring-2 focus:ring-lake/20";
   const close = <button type="button" onClick={() => setEditing(null)} className="rounded-full bg-pine px-4 py-2 text-sm font-medium text-white">Готово</button>;
+  const panelClass = "fixed inset-x-4 bottom-4 z-50 max-h-[82vh] overflow-y-auto rounded-[1.35rem] bg-white p-5 shadow-[0_22px_80px_rgba(14,26,31,0.22)] md:inset-x-auto md:right-6 md:w-[520px] md:rounded-[2rem] md:p-6";
 
   if (editing === "contacts") {
     return (
-      <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
+      <div className={panelClass}>
         <div className="mb-4 flex items-center justify-between gap-4"><h3 className="text-xl font-semibold">Контакты и адрес</h3>{close}</div>
         <div className="grid gap-4 md:grid-cols-2">
           <TextControl label="Адрес" value={draft.address} onChange={(value) => setField("address", value)} placeholder="поселок Акши, первая линия" />
@@ -418,7 +434,7 @@ function EditPanel({ editing, draft, setField, setEditing }: {
 
   if (editing === "pricesText") {
     return (
-      <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
+      <div className={panelClass}>
         <div className="mb-4 flex items-center justify-between gap-4"><h3 className="text-xl font-semibold">Цены</h3>{close}</div>
         <textarea className={`${common} min-h-36`} value={draft.pricesText} onChange={(event) => setField("pricesText", event.target.value)} placeholder={"Стандарт | 28000 | за номер в сутки\nКоттедж | 65000 | до 6 гостей"} />
       </div>
@@ -639,7 +655,7 @@ function SectionTitle({ icon, label, action, onClick }: { icon?: React.ReactNode
 
 function SinglePanel({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
+    <div className="fixed inset-x-4 bottom-4 z-50 max-h-[82vh] overflow-y-auto rounded-[1.35rem] bg-white p-5 shadow-[0_22px_80px_rgba(14,26,31,0.22)] md:inset-x-auto md:right-6 md:w-[520px] md:rounded-[2rem] md:p-6">
       <div className="mb-4 flex items-center justify-between gap-4">
         <h3 className="text-xl font-semibold">{title}</h3>
         <button type="button" onClick={onClose} className="rounded-full bg-pine px-4 py-2 text-sm font-medium text-white">Готово</button>
@@ -659,11 +675,20 @@ function TextControl({ label, value, onChange, placeholder }: { label: string; v
 }
 
 function SaveButton() {
+  return (
+    <button form="owner-resort-editor-form" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">
+      <Save size={16} />
+      Сохранить изменения
+    </button>
+  );
+}
+
+function ReviewSubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button form="owner-resort-editor-form" disabled={pending} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-pine px-5 py-3 text-sm font-medium text-white disabled:opacity-60">
-      <Save size={16} />
-      {pending ? "Сохраняем..." : "Сохранить изменения"}
+    <button disabled={pending} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-dune px-5 py-3 text-sm font-medium text-white disabled:opacity-60">
+      <Send size={16} />
+      {pending ? "Проверяем заполнение..." : "Отправить на проверку"}
     </button>
   );
 }

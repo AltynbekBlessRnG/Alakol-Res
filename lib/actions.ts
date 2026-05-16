@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import type { ResortStatus } from "@/lib/types";
 import { getResortCompleteness } from "@/lib/supabase/data";
 import { requireRole } from "@/lib/session";
@@ -233,6 +233,7 @@ export async function submitResortForReviewAction(formData: FormData) {
     revalidatePath("/admin");
     redirect(`/owner/resorts/${id}?submitted=1`);
   } catch (error) {
+    unstable_rethrow(error);
     console.error("submitResortForReviewAction error:", error);
   }
 }

@@ -24,10 +24,11 @@ export default async function OwnerResortPage({ params, searchParams }: OwnerRes
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) notFound();
 
   const error = query.error ? (Array.isArray(query.error) ? query.error[0] : query.error) : undefined;
+  const notice = query.submitted ? "submitted" : query.saved ? "saved" : undefined;
 
   return (
     <main className="min-h-screen bg-[#f7f1e6]">
-      <OwnerResortForm resort={resort} error={error} />
+      <OwnerResortForm resort={resort} error={error} notice={notice} />
     </main>
   );
 }
