@@ -137,13 +137,17 @@ export async function updateResortAction(formData: FormData) {
     kind: index === 0 ? "cover" : "gallery"
   }));
   const prices = parsePriceRows(String(formData.get("prices") || ""));
+  const generatedShortDescription =
+    `${values.title} в ${values.zone}: ${values.accommodationType.toLowerCase()}, ${values.foodOptions.toLowerCase()}, ${values.distanceToLakeM} м до воды.`;
+  const shortDescription = values.shortDescription?.trim() || generatedShortDescription;
+  const description = values.description?.trim() || shortDescription;
 
   await updateResortRecordInSupabase(id, {
     ...resort,
     title: values.title,
     slug: slugify(values.title, resort.id),
-    shortDescription: values.shortDescription,
-    description: values.description,
+    shortDescription,
+    description,
     zone: values.zone,
     address: values.address,
     minPrice: values.minPrice,

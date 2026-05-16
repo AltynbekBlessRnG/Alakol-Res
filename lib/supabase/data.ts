@@ -864,7 +864,6 @@ export function getResortCompleteness(resort: ResortWithRelations | Resort) {
   const missing: string[] = [];
   if (!base.images.length || !base.images.some((image) => image.isCover || image.kind === "cover")) missing.push("cover-фото");
   if (base.images.length < 3) missing.push("минимум 3 фото");
-  if (!base.description.trim() || base.description.trim().length < 110) missing.push("полное описание от 110 символов");
   if (!base.includedText.trim()) missing.push("что включено в цену");
   if (!base.rulesText.trim()) missing.push("правила проживания");
   if (!base.beachLine.trim()) missing.push("описание берега");
@@ -873,6 +872,5 @@ export function getResortCompleteness(resort: ResortWithRelations | Resort) {
   if (!base.address.trim()) missing.push("адрес");
   if (base.prices.length === 0) missing.push("ценовые пакеты");
   if (base.amenities.length < 3) missing.push("хотя бы 3 удобства");
-  if (!base.shortDescription.trim() || base.shortDescription.trim().length < 45) missing.push("краткое описание от 45 символов");
   return { isReady: missing.length === 0, missing };
 }

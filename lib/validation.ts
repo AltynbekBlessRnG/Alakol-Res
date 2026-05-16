@@ -51,8 +51,8 @@ export const resortUploadSchema = z.object({
 export const ownerResortFormSchema = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(2),
-  shortDescription: z.string().trim().min(10),
-  description: z.string().trim().min(20),
+  shortDescription: z.string().trim().max(500).optional().or(z.literal("")),
+  description: z.string().trim().max(3000).optional().or(z.literal("")),
   zone: z.string().trim().min(1),
   address: z.string().trim().min(1),
   minPrice: z.coerce.number().int().positive(),

@@ -1,6 +1,5 @@
 import { submitResortForReviewAction, updateResortAction } from "@/lib/actions";
 import { ImageUploadPanel } from "@/components/forms/image-upload-panel";
-import { TextareaWithCounter } from "@/components/forms/textarea-with-counter";
 import { Input, Textarea } from "@/components/ui/input";
 import { getResortCompleteness } from "@/lib/supabase/data";
 import { RESORT_STATUS, type Resort, type ResortAmenity, type ResortImage, type ResortPrice, type ResortStatus } from "@/lib/types";
@@ -73,27 +72,26 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Короткое описание</label>
-            <TextareaWithCounter
+            <Textarea
               name="shortDescription"
               defaultValue={resort.shortDescription}
-              minLength={45}
               className="min-h-[90px]"
               placeholder="Например: Семейная зона отдыха в Акши, 120 м до воды, бассейн и детская площадка."
             />
             <p className="mt-2 text-xs leading-5 text-black/45">
-              Коротко и по делу: кому подходит место, чем оно привлекает, что там за атмосфера. Желательно от 45 символов.
+              Можно оставить пустым: мы соберём короткое описание из основных данных.
             </p>
           </div>
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Полное описание</label>
-            <TextareaWithCounter
+            <Textarea
               name="description"
               defaultValue={resort.description}
-              minLength={110}
+              className="min-h-[110px]"
               placeholder="Например: Подходит для семей с детьми и спокойного отдыха. На территории есть кафе, парковка, бассейн, беседки и номера разных категорий. До пляжа можно дойти за 2 минуты."
             />
             <p className="mt-2 text-xs leading-5 text-black/45">
-              Опишите формат отдыха, расстояние до воды, кому подойдёт место, что есть на территории и чем оно отличается. Желательно от 110 символов.
+              Необязательно. Если есть время, добавьте 1-2 предложения простыми словами.
             </p>
           </div>
           <div>
