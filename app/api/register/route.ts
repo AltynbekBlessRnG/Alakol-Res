@@ -4,13 +4,25 @@ import { createNotificationInSupabase, createUserInSupabase } from "@/lib/supaba
 import { checkRateLimit, addRateLimitHeaders } from "@/lib/rate-limit";
 
 const schema = z
-  .object({
-    accountType: z.literal("USER").default("USER"),
-    name: z.string().trim().min(2, "Имя слишком короткое."),
-    email: z.string().trim().email("Нужен корректный email."),
-    password: z.string().min(8, "Пароль должен быть не короче 8 символов."),
-    passwordConfirm: z.string().min(8)
-  })
+  .discriminatedUnion("accountType", [
+    z.object({
+      accountType: z.literal("USER"),
+      name: z.string().trim().min(2, "Имя слишком короткое."),
+      email: z.string().trim().email("Нужен корректный email."),
+      password: z.string().min(8, "Пароль должен быть не короче 8 символов."),
+      passwordConfirm: z.string().min(8)
+    }),
+    z.object({
+      accountType: z.literal("OWNER"),
+      name: z.string().trim().min(2, "Имя слишком короткое."),
+      email: z.string().trim().email("Нужен корректный email."),
+      password: z.string().min(8, "Пароль должен быть не короче 8 символов."),
+      passwordConfirm: z.string().min(8),
+      company: z.string().trim().min(2, "Укажите название зоны отдыха или компании."),
+      phone: z.string().trim().min(7, "Укажите рабочий телефон."),
+      whatsapp: z.string().trim().min(7, "Укажите WhatsApp для гостей.")
+    })
+  ])
   .refine((data) => data.password === data.passwordConfirm, {
     message: "Пароли не совпадают.",
     path: ["passwordConfirm"]
@@ -41,7 +53,14 @@ export async function POST(request: Request) {
     email: payload.data.email,
     name: payload.data.name,
     password: payload.data.password,
-    role: "USER"
+    role: payload.data.accountType,
+    ownerProfile: payload.data.accountType === "OWNER"
+      ? {
+          company: payload.data.company,
+          phone: payload.data.phone,
+          whatsapp: payload.data.whatsapp
+        }
+      : undefined
   });
 
   if (!result.ok) {
@@ -58,9 +77,11 @@ export async function POST(request: Request) {
   await createNotificationInSupabase({
     userId: result.user.id,
     type: "password_reset",
-    title: "Аккаунт создан",
-    body: "Добро пожаловать в Alakol Select. Теперь можно сохранять зоны отдыха и оставлять отзывы.",
-    href: "/account"
+    title: result.user.role === "OWNER" ? "Кабинет владельца готов" : "Аккаунт создан",
+    body: result.user.role === "OWNER"
+      ? "Можно добавлять свои зоны отдыха, редактировать карточки и получать заявки от гостей."
+      : "Добро пожаловать в Alakol Select. Теперь можно сохранять зоны отдыха и оставлять отзывы.",
+    href: result.user.role === "OWNER" ? "/owner" : "/account"
   });
 
   return NextResponse.json(
