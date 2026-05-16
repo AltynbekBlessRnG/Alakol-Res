@@ -817,7 +817,7 @@ export async function createDraftResortInSupabase(ownerProfileId: string) {
   await supabase.from("resorts").insert({
     id,
     owner_profile_id: ownerProfileId,
-    title: "Новая зона отдыха",
+    title: "",
     slug: `resort-${id}`,
     short_description: "",
     description: "",
@@ -832,7 +832,7 @@ export async function createDraftResortInSupabase(ownerProfileId: string) {
     accommodation_type: "",
     contact_phone: "",
     whatsapp: "",
-    family_friendly: true,
+    family_friendly: false,
     youth_friendly: false,
     has_pool: false,
     has_wifi: false,

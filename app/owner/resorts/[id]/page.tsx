@@ -5,7 +5,10 @@ import { requireRole } from "@/lib/session";
 import { noIndexMetadata } from "@/lib/seo";
 import { getResortByIdFromSupabase } from "@/lib/supabase/data";
 
-export const metadata: Metadata = noIndexMetadata("Редактирование объекта", "Служебная страница редактирования карточки объекта.");
+export const metadata: Metadata = noIndexMetadata(
+  "Редактирование объекта",
+  "Служебная страница редактирования карточки объекта."
+);
 
 type OwnerResortPageProps = {
   params: Promise<{ id: string }>;
@@ -20,20 +23,11 @@ export default async function OwnerResortPage({ params, searchParams }: OwnerRes
 
   if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) notFound();
 
+  const error = query.error ? (Array.isArray(query.error) ? query.error[0] : query.error) : undefined;
+
   return (
-    <main className="min-h-screen bg-mist px-5 py-10 md:px-8">
-      <div className="mx-auto max-w-7xl">
-        <p className="text-xs uppercase tracking-[0.2em] text-black/45">owner / edit resort</p>
-        <h1 className="mt-3 font-display text-5xl text-ink">Редактирование карточки</h1>
-        {query.error && (
-          <p className="mt-4 rounded-[1.25rem] bg-[#f7d7d7] px-4 py-3 text-sm text-[#8f2c2c]">
-            Для отправки на модерацию не хватает: {Array.isArray(query.error) ? query.error[0] : query.error}
-          </p>
-        )}
-        <div className="mt-8">
-          <OwnerResortForm resort={resort} />
-        </div>
-      </div>
+    <main className="min-h-screen bg-[#f7f1e6]">
+      <OwnerResortForm resort={resort} error={error} />
     </main>
   );
 }

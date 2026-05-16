@@ -146,28 +146,31 @@ export async function updateResortAction(formData: FormData) {
     .map((item) => String(item).trim())
     .filter(Boolean);
   const includedOther = String(formData.get("includedOther") || "").trim();
-  const accommodationType = accommodationTypes.length ? accommodationTypes.join(", ") : values.accommodationType;
+  const title = values.title?.trim() || "Без названия";
+  const zone = values.zone?.trim() || "Алаколь";
+  const foodOptions = values.foodOptions?.trim() || "Без питания";
+  const accommodationType = accommodationTypes.length ? accommodationTypes.join(", ") : values.accommodationType || "Разные варианты размещения";
   const includedText = [...includedItems, includedOther].filter(Boolean).join(", ") || values.includedText || "";
   const hasAmenity = (label: string) => amenities.some((item) => item.toLowerCase() === label.toLowerCase());
   const generatedShortDescription =
-    `${values.title} в ${values.zone}: ${accommodationType.toLowerCase()}, ${values.foodOptions.toLowerCase()}, ${values.distanceToLakeM} м до воды.`;
+    `${title} в ${zone}: ${accommodationType.toLowerCase()}, ${foodOptions.toLowerCase()}, ${values.distanceToLakeM} м до воды.`;
   const shortDescription = values.shortDescription?.trim() || generatedShortDescription;
   const description = values.description?.trim() || shortDescription;
 
   await updateResortRecordInSupabase(id, {
     ...resort,
-    title: values.title,
-    slug: slugify(values.title, resort.id),
+    title,
+    slug: slugify(title, resort.id),
     shortDescription,
     description,
-    zone: values.zone,
-    address: values.address,
+    zone,
+    address: values.address ?? "",
     minPrice: values.minPrice,
     maxPrice: values.maxPrice,
-    foodOptions: values.foodOptions,
+    foodOptions,
     accommodationType,
-    contactPhone: values.contactPhone,
-    whatsapp: values.whatsapp,
+    contactPhone: values.contactPhone ?? "",
+    whatsapp: values.whatsapp ?? "",
     latitude: values.latitude,
     longitude: values.longitude,
     distanceToLakeM: values.distanceToLakeM,
