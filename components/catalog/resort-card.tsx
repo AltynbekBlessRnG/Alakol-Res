@@ -11,6 +11,7 @@ type ResortCardProps = {
 
 export function ResortCard({ resort }: ResortCardProps) {
   const image = resort.images[0];
+  const extraAmenity = resort.amenities.find((amenity) => amenity.label.trim().toLowerCase() !== "wi-fi");
 
   return (
     <article className="group relative overflow-hidden rounded-[1.35rem] border border-black/8 bg-white shadow-[0_12px_36px_rgba(14,26,31,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(14,26,31,0.14)]">
@@ -65,8 +66,8 @@ export function ResortCard({ resort }: ResortCardProps) {
                 Wi-Fi
               </span>
             )}
-            {resort.amenities[0] && (
-              <span className="truncate rounded-2xl bg-mist px-3 py-2">{resort.amenities[0].label}</span>
+            {extraAmenity && (
+              <span className="truncate rounded-2xl bg-mist px-3 py-2">{extraAmenity.label}</span>
             )}
           </div>
 

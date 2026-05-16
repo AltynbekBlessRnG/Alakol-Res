@@ -7,13 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 
 type AuthMode = "login" | "register";
-type RegisterAccountType = "USER" | "OWNER";
 
 export function LoginForm() {
   const nameId = useId();
-  const companyId = useId();
-  const phoneId = useId();
-  const whatsappId = useId();
   const emailId = useId();
   const passwordId = useId();
   const confirmPasswordId = useId();
@@ -24,12 +20,8 @@ export function LoginForm() {
   const [success, setSuccess] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [name, setName] = useState("");
-  const [accountType, setAccountType] = useState<RegisterAccountType>("USER");
-  const [company, setCompany] = useState("");
-  const [phone, setPhone] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [email, setEmail] = useState("user@alakol.kz");
-  const [password, setPassword] = useState("user12345");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
 
   async function onLogin() {
@@ -59,12 +51,11 @@ export function LoginForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        accountType,
+        accountType: "USER",
         name,
         email,
         password,
-        passwordConfirm,
-        ...(accountType === "OWNER" ? { company, phone, whatsapp } : {})
+        passwordConfirm
       })
     });
 
@@ -104,20 +95,11 @@ export function LoginForm() {
       setPassword("");
       setPasswordConfirm("");
       setName("");
-      setCompany("");
-      setPhone("");
-      setWhatsapp("");
-      setAccountType("USER");
     }
   }
 
   const title = mode === "register" ? "Создать аккаунт" : "Войти в аккаунт";
-  const subtitle =
-    mode === "register"
-      ? accountType === "OWNER"
-        ? "Кабинет владельца для управления объектами и заявками."
-        : "Аккаунт гостя для избранного, сравнения и отзывов."
-      : "Выберите демо-доступ или введите свои данные.";
+  const subtitle = mode === "register" ? "Для избранного, сравнения и отзывов." : "Введите email и пароль.";
 
   return (
     <div className="space-y-5">
@@ -143,88 +125,19 @@ export function LoginForm() {
         </button>
       </div>
 
-      {mode === "login" ? (
-        <div className="grid gap-2 sm:grid-cols-3">
-          {[
-            { label: "Гость", email: "user@alakol.kz", password: "user12345" },
-            { label: "Владелец", email: "owner@alakol.kz", password: "owner123" },
-            { label: "Админ", email: "admin@alakol.kz", password: "admin123" }
-          ].map((preset) => (
-            <button
-              key={preset.email}
-              type="button"
-              onClick={() => {
-                setEmail(preset.email);
-                setPassword(preset.password);
-              }}
-              className="rounded-full border border-black/10 px-3 py-2 text-xs font-medium text-black/70 transition hover:border-pine hover:text-pine"
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
       <form onSubmit={onSubmit} className="space-y-4">
         {mode === "register" ? (
-          <>
-            <div className="rounded-[1.25rem] border border-black/10 bg-[#f7f1e6] p-2">
-              <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setAccountType("USER")}
-                  className={`rounded-[1rem] px-4 py-3 text-left transition ${accountType === "USER" ? "bg-pine text-white" : "bg-white text-black/65"}`}
-                >
-                  <p className="text-sm font-medium">Гость</p>
-                  <p className={`mt-1 text-xs leading-5 ${accountType === "USER" ? "text-white/75" : "text-black/45"}`}>
-                    Избранное, сравнение, отзывы.
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAccountType("OWNER")}
-                  className={`rounded-[1rem] px-4 py-3 text-left transition ${accountType === "OWNER" ? "bg-pine text-white" : "bg-white text-black/65"}`}
-                >
-                  <p className="text-sm font-medium">Владелец</p>
-                  <p className={`mt-1 text-xs leading-5 ${accountType === "OWNER" ? "text-white/75" : "text-black/45"}`}>
-                    Объекты, заявки, CRM.
-                  </p>
-                </button>
-              </div>
-            </div>
-
+          <div>
+            <p className="mb-4 rounded-[1rem] bg-[#f7f1e6] px-4 py-3 text-sm leading-6 text-black/62">
+              Владельцев подключаем отдельно, чтобы карточки в каталоге оставались проверенными.
+            </p>
             <div>
               <label htmlFor={nameId} className="mb-2 block text-sm text-black/55">
                 Ваше имя
               </label>
               <Input id={nameId} type="text" name="name" value={name} onChange={(event) => setName(event.target.value)} />
             </div>
-
-            {accountType === "OWNER" ? (
-              <>
-                <div>
-                  <label htmlFor={companyId} className="mb-2 block text-sm text-black/55">
-                    Название объекта или компании
-                  </label>
-                  <Input id={companyId} type="text" name="company" value={company} onChange={(event) => setCompany(event.target.value)} />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label htmlFor={phoneId} className="mb-2 block text-sm text-black/55">
-                      Телефон
-                    </label>
-                    <Input id={phoneId} type="text" name="phone" value={phone} onChange={(event) => setPhone(event.target.value)} />
-                  </div>
-                  <div>
-                    <label htmlFor={whatsappId} className="mb-2 block text-sm text-black/55">
-                      WhatsApp
-                    </label>
-                    <Input id={whatsappId} type="text" name="whatsapp" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} />
-                  </div>
-                </div>
-              </>
-            ) : null}
-          </>
+          </div>
         ) : null}
         <div>
           <label htmlFor={emailId} className="mb-2 block text-sm text-black/55">
@@ -266,9 +179,9 @@ export function LoginForm() {
           className="interactive-surface w-full rounded-full bg-pine px-4 py-3 text-sm font-medium text-white disabled:opacity-60"
         >
           {isPending
-            ? (mode === "register" ? (accountType === "OWNER" ? "Создаём кабинет владельца..." : "Создаём аккаунт...") : "Входим...")
+            ? (mode === "register" ? "Создаём аккаунт..." : "Входим...")
             : mode === "register"
-              ? (accountType === "OWNER" ? "Создать кабинет владельца" : "Создать аккаунт")
+              ? "Создать аккаунт"
               : "Войти"}
         </button>
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">

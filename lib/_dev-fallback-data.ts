@@ -1191,7 +1191,7 @@ export function addModerationReview(input: { resortId: string; adminId?: string;
 export function createReview(input: { resortId: string; userId?: string | null; authorName: string; rating: number; body: string }) {
   getDb()
     .prepare("INSERT INTO reviews (id, resortId, userId, authorName, rating, body, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    .run(createId("review"), input.resortId, input.userId ?? null, input.authorName, input.rating, input.body, "pending", new Date().toISOString());
+    .run(createId("review"), input.resortId, input.userId ?? null, input.authorName, input.rating, input.body, "approved", new Date().toISOString());
 }
 
 export function listPendingReviews() {

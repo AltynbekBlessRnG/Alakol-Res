@@ -2,39 +2,45 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-black/8 bg-[#10181d] text-white">
-      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 md:grid-cols-[1.2fr_0.8fr_0.8fr] md:px-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white">Alakol Select</p>
-          <p className="mt-4 max-w-md text-sm leading-7 text-white/65">
-            Каталог зон отдыха на Алаколе с фото, ценами, картой и быстрым выходом на звонок, WhatsApp и заявку.
+    <footer className="border-t border-black/8 bg-[#f3eadb] text-ink">
+      <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-[1.4fr_0.8fr_0.8fr] md:px-8">
+        <div className="max-w-md">
+          <p className="text-lg font-semibold">Alakol Select</p>
+          <p className="mt-3 text-sm leading-6 text-black/58">
+            Подбор зон отдыха на Алаколе: цены, фото, карта и быстрый контакт с объектом.
           </p>
+          <p className="mt-5 text-xs text-black/42">© {new Date().getFullYear()} Alakol Select</p>
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-white/42">Навигация</p>
-          <div className="mt-4 space-y-3 text-sm text-white/72">
-            <Link href="/" className="block transition hover:text-white">
+          <p className="text-xs uppercase tracking-[0.18em] text-black/42">Разделы</p>
+          <div className="mt-4 space-y-3 text-sm text-black/64">
+            <Link href="/" className="block transition hover:text-pine">
               Главная
             </Link>
-            <Link href="/catalog" className="block transition hover:text-white">
+            <Link href="/catalog" className="block transition hover:text-pine">
               Каталог
             </Link>
-            <Link href="/favorites" className="block transition hover:text-white">
+            <Link href="/favorites" className="block transition hover:text-pine">
               Избранное
             </Link>
-            <Link href="/compare" className="block transition hover:text-white">
+            <Link href="/compare" className="block transition hover:text-pine">
               Сравнение
             </Link>
           </div>
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-white/42">Для связи</p>
-          <div className="mt-4 space-y-3 text-sm text-white/72">
-            <p>Подбор по фото, цене, локации и условиям.</p>
-            <Link href="/login" className="block transition hover:text-white">
-              Войти в кабинет
+          <p className="text-xs uppercase tracking-[0.18em] text-black/42">Действия</p>
+          <div className="mt-4 space-y-3 text-sm text-black/64">
+            <Link href="/catalog#catalog-map" className="block transition hover:text-pine">
+              Карта объектов
+            </Link>
+            <Link href="/login" className="block transition hover:text-pine">
+              Войти
+            </Link>
+            <Link href="/login" className="block transition hover:text-pine">
+              Создать аккаунт
             </Link>
           </div>
         </div>

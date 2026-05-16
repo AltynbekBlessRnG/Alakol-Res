@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, MapPin, MessageCircle, PhoneCall, ShieldCheck, Sparkles, Star, Waves } from "lucide-react";
+import { Images, MapPin, MessageCircle, PhoneCall, Star } from "lucide-react";
 import { EventTracker } from "@/components/analytics/event-tracker";
 import { PublicActions } from "@/components/catalog/public-actions";
 import { ResortGallery } from "@/components/catalog/resort-gallery";
@@ -70,32 +70,6 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
     { label: "Трансфер", value: resort.transferInfo },
     { label: "Правила", value: resort.rulesText }
   ].filter((item) => item.value?.trim());
-  const spotlightCards = [
-    {
-      icon: ShieldCheck,
-      title: "Проверено",
-      text: "Цена, берег и контакты."
-    },
-    ...(resort.includedText.trim()
-      ? [
-          {
-            icon: Waves,
-            title: "Включено",
-            text: resort.includedText
-          }
-        ]
-      : []),
-    {
-      icon: Sparkles,
-      title: "Формат",
-      text: idealForText
-    },
-    {
-      icon: Star,
-      title: "Рейтинг",
-      text: resort.approvedReviewsCount ? `${resort.ratingAverage} / 5 · ${resort.approvedReviewsCount}` : "Новый объект"
-    }
-  ];
   const detailSchema = {
     "@context": "https://schema.org",
     "@type": "LodgingBusiness",
@@ -197,33 +171,19 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pt-5 md:px-8 md:pt-8">
-        <div className="grid gap-3 rounded-[1.35rem] bg-white p-4 shadow-[0_16px_48px_rgba(19,32,40,0.10)] md:grid-cols-2 md:rounded-[2rem] md:p-5 xl:grid-cols-4">
-          {spotlightCards.map((item) => (
-            <div key={item.title} className="rounded-[1rem] bg-[#f7f1e6] p-4 md:rounded-[1.5rem]">
-              <div className="flex items-center gap-2 text-sm text-pine">
-                <item.icon size={16} className={item.title === "Рейтинг" ? "fill-[#d49b35] text-[#d49b35]" : undefined} />
-                {item.title}
-              </div>
-              <p className="mt-3 text-sm leading-6 text-black/65">{item.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
         <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
           <div className="order-2 space-y-5 md:space-y-8 lg:order-1">
+            <ResortGallery images={resort.images} />
+
             <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
               <div className="flex items-center gap-2 text-sm text-pine">
-                <BadgeCheck size={16} />
-                Проверено
+                <Images size={16} />
+                Описание
               </div>
               <h2 className="mt-4 text-2xl font-semibold text-ink md:mt-5 md:text-4xl">О месте</h2>
               <p className="mt-5 max-w-3xl text-base leading-8 text-black/72">{resort.description}</p>
             </div>
-
-            <ResortGallery images={resort.images} />
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
@@ -286,6 +246,19 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
                 )) : <p className="text-sm text-black/55">Пока нет опубликованных отзывов.</p>}
               </div>
             </div>
+
+            <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
+              <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>
+              <h3 className="mt-3 font-display text-3xl text-ink">Поделиться впечатлением</h3>
+              <div className="mt-5">
+                <ReviewForm resortId={resort.id} returnTo={`/catalog/${resort.slug}`} embedded />
+              </div>
+            </div>
+
+            <div className="rounded-[1.35rem] bg-white p-5 text-sm leading-7 text-black/60 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-8">
+              <p className="font-medium text-ink">Данные карточки проверены перед публикацией.</p>
+              <p className="mt-2">Цены, контакты и условия могут меняться, поэтому финальные детали лучше уточнить перед бронированием.</p>
+            </div>
           </div>
 
           <div className="order-1 space-y-5 lg:sticky lg:top-24 lg:order-2 lg:self-start">
@@ -312,13 +285,6 @@ export default async function ResortDetailPage({ params }: ResortDetailPageProps
             </div>
 
             <LeadForm resortId={resort.id} id="lead-form" />
-            <div className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_42px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>
-              <h3 className="mt-3 font-display text-3xl text-ink">Поделиться впечатлением</h3>
-              <div className="mt-5">
-                <ReviewForm resortId={resort.id} returnTo={`/catalog/${resort.slug}`} embedded />
-              </div>
-            </div>
           </div>
         </div>
       </section>

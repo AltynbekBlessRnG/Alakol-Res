@@ -68,7 +68,7 @@ export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId:
 
       setBody("");
       setRating("5");
-      const nextSuccess = payload.message || "Отзыв отправлен на модерацию.";
+      const nextSuccess = payload.message || "Отзыв опубликован. Спасибо!";
       setSuccess(nextSuccess);
       toast.success(nextSuccess);
     } catch {
@@ -84,7 +84,7 @@ export function ReviewForm({ resortId, returnTo, embedded = false }: { resortId:
     <form onSubmit={onSubmit} className={embedded ? "" : "rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]"}>
       {!embedded && <p className="text-xs uppercase tracking-[0.2em] text-black/45">Оставить отзыв</p>}
       <h3 className={`${embedded ? "font-display text-2xl text-ink" : "mt-3 font-display text-3xl text-ink"}`}>Поделиться впечатлением</h3>
-      <p className="mt-2 text-sm text-black/55">После модерации.</p>
+      <p className="mt-2 text-sm text-black/55">Опубликуем сразу после отправки.</p>
       <div className="mt-4 grid gap-4">
         <select value={rating} onChange={(event) => setRating(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none">
           {[5, 4, 3, 2, 1].map((value) => (

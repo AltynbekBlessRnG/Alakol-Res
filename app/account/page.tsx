@@ -20,11 +20,11 @@ export default async function AccountPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-black/40">аккаунт</p>
             <h1 className="mt-4 font-display text-5xl leading-[0.95] text-ink md:text-6xl">
-              {session.user.name}, здесь собраны ваши сохранённые зоны и отзывы
+              {session.user.name}, ваш аккаунт
             </h1>
           </div>
           <p className="max-w-2xl text-base leading-8 text-black/64">
-            Аккаунт нужен, чтобы не терять понравившиеся варианты между устройствами и оставлять отзывы от своего имени. Всё важное теперь в одном спокойном месте.
+            Избранное и отзывы в одном месте.
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export default async function AccountPage() {
                   </div>
                   <p className="mt-3 text-sm leading-6 text-black/68">{review.body}</p>
                     <p className="mt-3 text-xs uppercase tracking-[0.18em] text-black/38">
-                      {review.status === "approved" ? "Опубликован" : "На модерации"}
+                      {review.status === "approved" ? "Опубликован" : "Сохранён"}
                     </p>
                 </div>
               ))}

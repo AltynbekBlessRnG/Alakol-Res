@@ -2,10 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import {
-  createNotificationInSupabase,
   createReviewInSupabase,
-  getResortByIdFromSupabase,
-  getUserByEmailFromSupabase
+  getResortByIdFromSupabase
 } from "@/lib/supabase/data";
 import { checkRateLimit, addRateLimitHeaders } from "@/lib/rate-limit";
 import { reviewSchema } from "@/lib/validation";
@@ -49,21 +47,9 @@ export async function POST(request: Request) {
     userId: session.user.id
   });
 
-  const admin = await getUserByEmailFromSupabase("admin@alakol.kz");
-  if (admin) {
-    await createNotificationInSupabase({
-      userId: admin.id,
-      type: "resort_submitted",
-      title: "Новый отзыв на модерации",
-      body: `Поступил новый отзыв для объекта ${resort.title}.`,
-      href: "/admin"
-    });
-  }
-
   return NextResponse.json({
     ok: true,
-    moderation: true,
-    message: "Отзыв отправлен на модерацию. Он появится в карточке после проверки."
+    message: "Отзыв опубликован. Спасибо!"
   }, { headers });
 }
 

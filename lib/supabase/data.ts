@@ -417,7 +417,7 @@ export async function createReviewInSupabase(input: { resortId: string; userId?:
     author_name: input.authorName,
     body: input.body,
     rating: input.rating,
-    status: "pending"
+    status: "approved"
   });
   return id;
 }

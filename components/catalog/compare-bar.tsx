@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ArrowRight, Scale, X } from "lucide-react";
 import { toast } from "sonner";
 import { readPublicList, writePublicList, type PublicStoredItem } from "@/lib/public-lists";
 
 export function CompareBar() {
   const [items, setItems] = useState<PublicStoredItem[]>([]);
+  const pathname = usePathname();
 
   useEffect(() => {
     const sync = () => setItems(readPublicList("compare"));
@@ -20,7 +22,7 @@ export function CompareBar() {
     };
   }, []);
 
-  if (!items.length) return null;
+  if (!items.length || pathname === "/compare") return null;
 
   function removeItem(slug: string) {
     writePublicList("compare", items.filter((current) => current.slug !== slug));
