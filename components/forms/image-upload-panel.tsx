@@ -18,6 +18,41 @@ type ImageUploadPanelProps = {
   reorderAction: (formData: FormData) => Promise<{ success: true } | { success: false; error: string }>;
 };
 
+const CLIENT_MAX_IMAGE_DIMENSION = 1800;
+const CLIENT_WEBP_QUALITY = 0.8;
+
+async function compressImageFile(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, CLIENT_MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", CLIENT_WEBP_QUALITY);
+    });
+
+    if (!blob || blob.size >= file.size) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "photo";
+    return new File([blob], `${baseName}.webp`, { type: "image/webp" });
+  } catch {
+    return file;
+  }
+}
+
 export function ImageUploadPanel({ resortId, existingImages, reorderAction }: ImageUploadPanelProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -25,6 +60,7 @@ export function ImageUploadPanel({ resortId, existingImages, reorderAction }: Im
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isReordering, setIsReordering] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setImages(existingImages);
@@ -32,19 +68,32 @@ export function ImageUploadPanel({ resortId, existingImages, reorderAction }: Im
 
   async function onUpload(formData: FormData) {
     setMessage("");
+    setIsUploading(true);
+
+    const files = formData.getAll("photos").filter((file): file is File => file instanceof File && file.size > 0);
+    const uploadData = new FormData();
+    uploadData.set("resortId", resortId);
+
+    for (const file of files) {
+      uploadData.append("photos", await compressImageFile(file));
+    }
+
     const response = await fetch("/api/uploads", {
       method: "POST",
-      body: formData
+      body: uploadData
     });
 
+    setIsUploading(false);
+
     if (!response.ok) {
-      const nextMessage = "Не удалось загрузить фото.";
+      const payload = await response.json().catch(() => null);
+      const nextMessage = payload?.errors?.[0] || payload?.message || "Не удалось загрузить фото.";
       setMessage(nextMessage);
       toast.error(nextMessage);
       return;
     }
 
-    const nextMessage = "Фото загружены.";
+    const nextMessage = "Фото загружены и сжаты.";
     setMessage(nextMessage);
     toast.success(nextMessage);
     startTransition(() => {
@@ -96,7 +145,9 @@ export function ImageUploadPanel({ resortId, existingImages, reorderAction }: Im
         </span>
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-black/45">Фото</p>
-          <p className="mt-2 text-sm leading-6 text-black/65">Перетащите фото или используйте стрелки. Первое фото станет обложкой.</p>
+          <p className="mt-2 text-sm leading-6 text-black/65">
+            Перетащите фото или используйте стрелки. Первое фото станет обложкой. Перед загрузкой снимки автоматически сжимаются.
+          </p>
         </div>
       </div>
 
@@ -109,8 +160,8 @@ export function ImageUploadPanel({ resortId, existingImages, reorderAction }: Im
           multiple
           className="block w-full rounded-2xl border border-dashed border-black/15 bg-mist px-4 py-5 text-sm"
         />
-        <button disabled={isPending} className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white disabled:opacity-60">
-          {isPending ? "Загружаем..." : "Загрузить фото"}
+        <button disabled={isPending || isUploading} className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white disabled:opacity-60">
+          {isUploading ? "Сжимаем и загружаем..." : "Загрузить фото"}
         </button>
       </form>
       {message && <p className="mt-3 text-sm text-pine">{message}</p>}

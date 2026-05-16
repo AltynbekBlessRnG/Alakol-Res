@@ -4,11 +4,12 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { optimizeImageBuffer, type OptimizedImage } from "@/lib/images/optimize";
 import { appendResortImagesInSupabase, getResortByIdFromSupabase } from "@/lib/supabase/data";
 import { uploadResortImagesToSupabaseStorage } from "@/lib/supabase/storage";
 import { resortUploadSchema } from "@/lib/validation";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB before compression
 const MAX_FILES_PER_REQUEST = 10;
 
 const ALLOWED_MIME_TYPES = {
@@ -40,36 +41,44 @@ function getExtensionFromMime(mimeType: string): ".jpg" | ".png" | ".webp" | nul
   return ext || null;
 }
 
-async function validateFile(file: File): Promise<{ valid: true; safeName: string; extension: ".jpg" | ".png" | ".webp" } | { valid: false; error: string }> {
+async function validateAndOptimizeFile(
+  file: File
+): Promise<{ valid: true; safeName: string; image: OptimizedImage } | { valid: false; error: string }> {
   if (file.size > MAX_FILE_SIZE) {
-    return { valid: false, error: `File too large: ${file.name}. Max size is 5MB.` };
+    return { valid: false, error: `Файл слишком большой: ${file.name}. Максимум 15 МБ.` };
   }
 
   if (file.size === 0) {
-    return { valid: false, error: `Empty file: ${file.name}` };
+    return { valid: false, error: `Пустой файл: ${file.name}` };
   }
 
   const declaredMime = file.type;
   const validMime = getExtensionFromMime(declaredMime);
   if (!validMime) {
-    return { valid: false, error: `Invalid file type: ${declaredMime}. Allowed: JPEG, PNG, WebP.` };
+    return { valid: false, error: `Неподдерживаемый формат: ${declaredMime}. Можно JPEG, PNG или WebP.` };
   }
 
   const originalExt = path.extname(file.name);
   if (!isValidExtension(originalExt)) {
-    return { valid: false, error: `Invalid extension: ${originalExt}` };
+    return { valid: false, error: `Неподдерживаемое расширение: ${originalExt}` };
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const magic = MAGIC_BYTES[declaredMime as keyof typeof MAGIC_BYTES];
   if (magic && !buffer.subarray(0, magic.length).equals(magic)) {
-    return { valid: false, error: `File signature mismatch: ${file.name}. Possible fake extension.` };
+    return { valid: false, error: `Файл не похож на настоящее изображение: ${file.name}` };
   }
 
   const safeName = sanitizeFilename(path.basename(file.name, originalExt));
 
-  return { valid: true, safeName, extension: validMime };
+  try {
+    const image = await optimizeImageBuffer(buffer);
+
+    return { valid: true, safeName, image };
+  } catch {
+    return { valid: false, error: `Не удалось обработать изображение: ${file.name}` };
+  }
 }
 
 export async function POST(request: Request) {
@@ -101,13 +110,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    const validatedFiles: { file: File; safeName: string; extension: ".jpg" | ".png" | ".webp" }[] = [];
+    const optimizedImages: { safeName: string; image: OptimizedImage }[] = [];
     const errors: string[] = [];
 
     for (const file of files) {
-      const result = await validateFile(file);
+      const result = await validateAndOptimizeFile(file);
       if (result.valid) {
-        validatedFiles.push({ file, safeName: result.safeName, extension: result.extension });
+        optimizedImages.push({ safeName: result.safeName, image: result.image });
       } else {
         errors.push(result.error);
       }
@@ -117,8 +126,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Validation failed", errors }, { status: 400 });
     }
 
-    const validatedFileObjects = validatedFiles.map(({ file }) => file);
-    let uploadedUrls = await uploadResortImagesToSupabaseStorage(resortId, validatedFileObjects);
+    let uploadedUrls = await uploadResortImagesToSupabaseStorage(
+      resortId,
+      optimizedImages.map(({ image }) => ({
+        buffer: image.buffer,
+        extension: image.extension,
+        contentType: image.contentType
+      }))
+    );
 
     if (!uploadedUrls) {
       const uploadDir = path.join(process.cwd(), "public", "uploads", "resorts", resortId);
@@ -126,11 +141,10 @@ export async function POST(request: Request) {
 
       uploadedUrls = [];
 
-      for (const { file, extension } of validatedFiles) {
-        const fileName = `${randomUUID()}${extension}`;
+      for (const { image } of optimizedImages) {
+        const fileName = `${randomUUID()}${image.extension}`;
         const filePath = path.join(uploadDir, fileName);
-        const bytes = Buffer.from(await file.arrayBuffer());
-        await fs.writeFile(filePath, bytes);
+        await fs.writeFile(filePath, image.buffer);
         uploadedUrls.push(`/uploads/resorts/${resortId}/${fileName}`);
       }
     }

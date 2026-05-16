@@ -1,9 +1,14 @@
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseAdminConfig, isSupabaseStorageConfigured } from "@/lib/supabase/env";
 
-export async function uploadResortImagesToSupabaseStorage(resortId: string, files: File[]) {
+export type StorageUploadImage = {
+  buffer: Buffer;
+  extension: string;
+  contentType: string;
+};
+
+export async function uploadResortImagesToSupabaseStorage(resortId: string, images: StorageUploadImage[]) {
   if (!isSupabaseStorageConfigured()) {
     return null;
   }
@@ -16,13 +21,12 @@ export async function uploadResortImagesToSupabaseStorage(resortId: string, file
   const { storageBucket } = getSupabaseAdminConfig();
   const uploadedUrls: string[] = [];
 
-  for (const file of files) {
-    const extension = path.extname(file.name) || ".jpg";
-    const fileName = `${resortId}/${randomUUID()}${extension}`;
-    const bytes = Buffer.from(await file.arrayBuffer());
+  for (const image of images) {
+    const fileName = `${resortId}/${randomUUID()}${image.extension || ".webp"}`;
 
-    const { error } = await supabase.storage.from(storageBucket).upload(fileName, bytes, {
-      contentType: file.type || "image/jpeg",
+    const { error } = await supabase.storage.from(storageBucket).upload(fileName, image.buffer, {
+      contentType: image.contentType,
+      cacheControl: "31536000",
       upsert: false
     });
 
