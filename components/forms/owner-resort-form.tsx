@@ -26,6 +26,7 @@ const ACCOMMODATION_OPTIONS = [
   "Глэмпинг",
   "Апартаменты"
 ];
+const AUDIENCE_OPTIONS = ["Семьям", "С детьми", "Парам", "Компаниям", "Тихий отдых"];
 const BEACH_OPTIONS = [
   "Первая линия, свой выход к воде",
   "Галечно-песчаный берег, 2 минуты пешком",
@@ -56,16 +57,40 @@ const AMENITY_OPTIONS = [
   "Охраняемая территория",
   "Прачечная"
 ];
+const INCLUDED_OPTIONS = [
+  "проживание",
+  "завтрак",
+  "парковка",
+  "Wi-Fi",
+  "бассейн",
+  "лежаки",
+  "детская зона",
+  "трансфер"
+];
 
 export function OwnerResortForm({ resort }: OwnerResortFormProps) {
   const completeness = getResortCompleteness(resort);
   const selectedAmenities = new Set(resort.amenities.map((item) => item.label));
+  const selectedAccommodationTypes = new Set(
+    ACCOMMODATION_OPTIONS.filter((option) => resort.accommodationType.toLowerCase().includes(option.toLowerCase()))
+  );
+  const selectedAudience = new Set<string>();
+  if (resort.familyFriendly) selectedAudience.add("Семьям");
+  if (resort.hasKidsZone) selectedAudience.add("С детьми");
+  if (resort.youthFriendly) selectedAudience.add("Компаниям");
+  const selectedIncludedItems = new Set(
+    INCLUDED_OPTIONS.filter((option) => resort.includedText.toLowerCase().includes(option.toLowerCase()))
+  );
 
   return (
     <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
       <form action={updateResortAction} className="space-y-5 rounded-[1.5rem] bg-white p-5 shadow-[0_18px_70px_rgba(14,26,31,0.08)] md:rounded-[2rem] md:p-6">
         <input type="hidden" name="id" value={resort.id} />
-        <div className="grid gap-5 md:grid-cols-2">
+        <input type="hidden" name="accommodationType" value={resort.accommodationType || "Разные варианты размещения"} />
+
+        <section className="rounded-[1.5rem] border border-black/8 bg-white p-4 md:p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-black/38">1. Основное</p>
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm text-black/55">Название</label>
             <Input name="title" defaultValue={resort.title} placeholder="Например: Saffron Coast Family Club" />
@@ -94,6 +119,12 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
               Необязательно. Если есть время, добавьте 1-2 предложения простыми словами.
             </p>
           </div>
+          </div>
+        </section>
+
+        <section className="rounded-[1.5rem] border border-black/8 bg-white p-4 md:p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-black/38">2. Локация и контакты</p>
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm text-black/55">Зона</label>
             <Select name="zone" defaultValue={resort.zone} options={ZONE_OPTIONS} />
@@ -138,44 +169,91 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
             <label className="mb-2 block text-sm text-black/55">Расстояние до воды, м</label>
             <Input type="number" name="distanceToLakeM" defaultValue={resort.distanceToLakeM} placeholder="Например: 120" />
           </div>
-          <div className="grid gap-3 rounded-[1.5rem] bg-mist p-4">
-            <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="familyFriendly" defaultChecked={resort.familyFriendly} />Семейный формат</label>
-            <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="youthFriendly" defaultChecked={resort.youthFriendly} />Для компании</label>
-            <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="hasPool" defaultChecked={resort.hasPool} />Бассейн</label>
-            <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="hasWifi" defaultChecked={resort.hasWifi} />Wi-Fi</label>
-            <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="hasParking" defaultChecked={resort.hasParking} />Парковка</label>
-            <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="hasKidsZone" defaultChecked={resort.hasKidsZone} />Детская зона</label>
           </div>
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-black/55">Удобства</label>
-            <div className="grid gap-3 rounded-[1.5rem] bg-mist p-4 sm:grid-cols-2">
-              {AMENITY_OPTIONS.map((option) => (
-                <label key={option} className="flex items-center gap-3 text-sm text-ink">
-                  <input type="checkbox" name="amenities" value={option} defaultChecked={selectedAmenities.has(option)} />
-                  {option}
-                </label>
-              ))}
+        </section>
+
+        <section className="rounded-[1.5rem] border border-black/8 bg-white p-4 md:p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-black/38">3. Размещение и цены</p>
+          <div className="mt-4 grid gap-5">
+            <div>
+              <label className="mb-2 block text-sm text-black/55">Какие варианты размещения есть</label>
+              <div className="grid gap-3 rounded-[1.5rem] bg-mist p-4 sm:grid-cols-2">
+                {ACCOMMODATION_OPTIONS.map((option) => (
+                  <label key={option} className="flex items-center gap-3 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      name="accommodationTypes"
+                      value={option}
+                      defaultChecked={selectedAccommodationTypes.has(option)}
+                    />
+                    {option}
+                  </label>
+                ))}
+              </div>
             </div>
-            <p className="mt-2 text-xs leading-5 text-black/45">Отметьте только то, что реально есть на территории или в номерах.</p>
+            <div>
+              <label className="mb-2 block text-sm text-black/55">Цены по строкам</label>
+              <Textarea
+                name="prices"
+                defaultValue={resort.prices.map((price) => `${price.label} | ${price.amount} | ${price.description}`).join("\n")}
+                className="min-h-[110px]"
+                placeholder={"Стандарт | 28000 | за номер в сутки\nСемейный люкс | 52000 | до 4 гостей\nДомик у воды | 45000 | отдельный домик"}
+              />
+              <p className="mt-2 text-xs leading-5 text-black/45">
+                Формат: <strong>название | цена | короткое уточнение</strong>. Каждая цена с новой строки.
+              </p>
+            </div>
           </div>
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-black/55">Что включено в цену</label>
-            <Textarea
-              name="includedText"
-              defaultValue={resort.includedText}
-              className="min-h-[90px]"
-              placeholder="Например: проживание, завтрак, парковка, Wi-Fi, бассейн, лежаки на пляже"
-            />
+        </section>
+
+        <section className="rounded-[1.5rem] border border-black/8 bg-white p-4 md:p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-black/38">4. Кому подходит</p>
+          <div className="mt-4 grid gap-3 rounded-[1.5rem] bg-mist p-4 sm:grid-cols-2">
+            {AUDIENCE_OPTIONS.map((option) => (
+              <label key={option} className="flex items-center gap-3 text-sm text-ink">
+                <input type="checkbox" name="audience" value={option} defaultChecked={selectedAudience.has(option)} />
+                {option}
+              </label>
+            ))}
           </div>
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-black/55">Правила проживания</label>
-            <Textarea
-              name="rulesText"
-              defaultValue={resort.rulesText}
-              className="min-h-[90px]"
-              placeholder="Например: заезд после 14:00, выезд до 12:00, без шумных мероприятий после 23:00"
-            />
+        </section>
+
+        <section className="rounded-[1.5rem] border border-black/8 bg-white p-4 md:p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-black/38">5. Удобства</p>
+          <div className="mt-4 grid gap-3 rounded-[1.5rem] bg-mist p-4 sm:grid-cols-2">
+            {AMENITY_OPTIONS.map((option) => (
+              <label key={option} className="flex items-center gap-3 text-sm text-ink">
+                <input type="checkbox" name="amenities" value={option} defaultChecked={selectedAmenities.has(option)} />
+                {option}
+              </label>
+            ))}
           </div>
+        </section>
+
+        <section className="rounded-[1.5rem] border border-black/8 bg-white p-4 md:p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-black/38">6. Условия</p>
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm text-black/55">Что включено в цену</label>
+              <div className="grid gap-3 rounded-[1.5rem] bg-mist p-4 sm:grid-cols-2">
+                {INCLUDED_OPTIONS.map((option) => (
+                  <label key={option} className="flex items-center gap-3 text-sm text-ink">
+                    <input type="checkbox" name="includedItems" value={option} defaultChecked={selectedIncludedItems.has(option)} />
+                    {option}
+                  </label>
+                ))}
+              </div>
+              <Input name="includedOther" className="mt-3" placeholder="Другое: например, мангал, полотенца, ранний заезд" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm text-black/55">Правила проживания</label>
+              <Textarea
+                name="rulesText"
+                defaultValue={resort.rulesText}
+                className="min-h-[90px]"
+                placeholder="Например: заезд после 14:00, выезд до 12:00, без шумных мероприятий после 23:00"
+              />
+            </div>
           <div>
             <label className="mb-2 block text-sm text-black/55">Берег и пляж</label>
             <Select name="beachLine" defaultValue={resort.beachLine} options={BEACH_OPTIONS} />
@@ -184,23 +262,12 @@ export function OwnerResortForm({ resort }: OwnerResortFormProps) {
             <label className="mb-2 block text-sm text-black/55">Трансфер</label>
             <Select name="transferInfo" defaultValue={resort.transferInfo} options={TRANSFER_OPTIONS} />
           </div>
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-black/55">Цены по строкам</label>
-            <Textarea
-              name="prices"
-              defaultValue={resort.prices.map((price) => `${price.label} | ${price.amount} | ${price.description}`).join("\n")}
-              className="min-h-[110px]"
-              placeholder={"Стандарт | 28000 | за номер в сутки\nСемейный люкс | 52000 | до 4 гостей\nДомик у воды | 45000 | отдельный домик"}
-            />
-            <p className="mt-2 text-xs leading-5 text-black/45">
-              Можно писать проще: <strong>название | цена</strong>. Описание необязательно, мы подставим его сами. Также поддерживаются форматы через
-              <strong> ; </strong>или <strong> - </strong>.
-            </p>
           </div>
+        </section>
+
           <div className="md:col-span-2 rounded-[1.5rem] bg-mist px-4 py-4 text-sm leading-6 text-black/65">
             Фото теперь лучше загружать через блок справа. После загрузки они сохраняются автоматически и не требуют ручного ввода URL.
           </div>
-        </div>
         <button className="rounded-full bg-pine px-5 py-3 text-sm font-medium text-white">Сохранить изменения</button>
       </form>
 

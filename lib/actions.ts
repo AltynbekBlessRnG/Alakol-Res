@@ -39,10 +39,6 @@ import {
   updateUserPasswordInSupabase
 } from "@/lib/supabase/data";
 
-function toBool(value: FormDataEntryValue | null) {
-  return value === "on" || value === "true";
-}
-
 function parsePriceRows(value: string) {
   return value
     .split("\n")
@@ -137,8 +133,24 @@ export async function updateResortAction(formData: FormData) {
     kind: index === 0 ? "cover" : "gallery"
   }));
   const prices = parsePriceRows(String(formData.get("prices") || ""));
+  const accommodationTypes = formData
+    .getAll("accommodationTypes")
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+  const audience = formData
+    .getAll("audience")
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+  const includedItems = formData
+    .getAll("includedItems")
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+  const includedOther = String(formData.get("includedOther") || "").trim();
+  const accommodationType = accommodationTypes.length ? accommodationTypes.join(", ") : values.accommodationType;
+  const includedText = [...includedItems, includedOther].filter(Boolean).join(", ") || values.includedText || "";
+  const hasAmenity = (label: string) => amenities.some((item) => item.toLowerCase() === label.toLowerCase());
   const generatedShortDescription =
-    `${values.title} в ${values.zone}: ${values.accommodationType.toLowerCase()}, ${values.foodOptions.toLowerCase()}, ${values.distanceToLakeM} м до воды.`;
+    `${values.title} в ${values.zone}: ${accommodationType.toLowerCase()}, ${values.foodOptions.toLowerCase()}, ${values.distanceToLakeM} м до воды.`;
   const shortDescription = values.shortDescription?.trim() || generatedShortDescription;
   const description = values.description?.trim() || shortDescription;
 
@@ -153,19 +165,19 @@ export async function updateResortAction(formData: FormData) {
     minPrice: values.minPrice,
     maxPrice: values.maxPrice,
     foodOptions: values.foodOptions,
-    accommodationType: values.accommodationType,
+    accommodationType,
     contactPhone: values.contactPhone,
     whatsapp: values.whatsapp,
     latitude: values.latitude,
     longitude: values.longitude,
     distanceToLakeM: values.distanceToLakeM,
-    familyFriendly: toBool(formData.get("familyFriendly")),
-    youthFriendly: toBool(formData.get("youthFriendly")),
-    hasPool: toBool(formData.get("hasPool")),
-    hasWifi: toBool(formData.get("hasWifi")),
-    hasParking: toBool(formData.get("hasParking")),
-    hasKidsZone: toBool(formData.get("hasKidsZone")),
-    includedText: values.includedText ?? "",
+    familyFriendly: audience.includes("Семьям") || audience.includes("С детьми"),
+    youthFriendly: audience.includes("Компаниям"),
+    hasPool: hasAmenity("Бассейн"),
+    hasWifi: hasAmenity("Wi-Fi"),
+    hasParking: hasAmenity("Парковка"),
+    hasKidsZone: hasAmenity("Детская зона") || audience.includes("С детьми"),
+    includedText,
     rulesText: values.rulesText ?? "",
     beachLine: values.beachLine ?? "",
     transferInfo: values.transferInfo ?? "",
