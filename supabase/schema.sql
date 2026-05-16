@@ -150,13 +150,14 @@ create or replace function public.check_rate_limit(
 )
 returns table(
   success boolean,
-  limit integer,
+  "limit" integer,
   remaining integer,
   reset bigint,
   retry_after integer
 )
 language plpgsql
 security definer
+set search_path = public, pg_temp
 as $$
 declare
   bucket public.rate_limit_buckets%rowtype;
@@ -215,3 +216,37 @@ create table if not exists public.moderation_reviews (
   comment text,
   created_at timestamptz not null default now()
 );
+
+revoke execute on function public.check_rate_limit(text, integer, integer) from public;
+revoke execute on function public.check_rate_limit(text, integer, integer) from anon;
+revoke execute on function public.check_rate_limit(text, integer, integer) from authenticated;
+grant execute on function public.check_rate_limit(text, integer, integer) to service_role;
+
+alter table public.users enable row level security;
+alter table public.owner_profiles enable row level security;
+alter table public.resorts enable row level security;
+alter table public.resort_images enable row level security;
+alter table public.resort_amenities enable row level security;
+alter table public.resort_prices enable row level security;
+alter table public.leads enable row level security;
+alter table public.reviews enable row level security;
+alter table public.favorites enable row level security;
+alter table public.notifications enable row level security;
+alter table public.analytics_events enable row level security;
+alter table public.rate_limit_buckets enable row level security;
+alter table public.password_reset_tokens enable row level security;
+alter table public.moderation_reviews enable row level security;
+
+create index if not exists analytics_events_resort_id_idx on public.analytics_events(resort_id);
+create index if not exists favorites_resort_id_idx on public.favorites(resort_id);
+create index if not exists leads_handled_by_id_idx on public.leads(handled_by_id);
+create index if not exists leads_resort_id_idx on public.leads(resort_id);
+create index if not exists moderation_reviews_admin_id_idx on public.moderation_reviews(admin_id);
+create index if not exists moderation_reviews_resort_id_idx on public.moderation_reviews(resort_id);
+create index if not exists notifications_user_id_idx on public.notifications(user_id);
+create index if not exists password_reset_tokens_user_id_idx on public.password_reset_tokens(user_id);
+create index if not exists resort_amenities_resort_id_idx on public.resort_amenities(resort_id);
+create index if not exists resort_images_resort_id_idx on public.resort_images(resort_id);
+create index if not exists resort_prices_resort_id_idx on public.resort_prices(resort_id);
+create index if not exists resorts_owner_profile_id_idx on public.resorts(owner_profile_id);
+create index if not exists reviews_user_id_idx on public.reviews(user_id);

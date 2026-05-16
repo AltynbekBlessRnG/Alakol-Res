@@ -11,6 +11,10 @@
 
 ## Production env
 
+- Supabase project: `Alakol-Select`
+- Supabase project ref: `bktrmzuhyziutmlzeert`
+- Supabase URL: `https://bktrmzuhyziutmlzeert.supabase.co`
+
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `NEXTAUTH_SECRET`
@@ -31,8 +35,8 @@
 - Rotate the Google Maps key that was shared in chat.
 - Restrict browser Google Maps key to the production domain and localhost for development.
 - Keep `SUPABASE_SERVICE_ROLE_KEY` server-only and never expose it as `NEXT_PUBLIC_*`.
-- Run Supabase SQL schema from `supabase/schema.sql`.
-- Create storage bucket `resort-media` and verify upload permissions.
+- Supabase schema has been applied to project `bktrmzuhyziutmlzeert`.
+- Storage bucket `resort-media` has been created.
 - Seed or import real resorts, real photos, correct contacts, and owner accounts.
 - Set spend limits in Vercel, Supabase, and Google Cloud.
 
