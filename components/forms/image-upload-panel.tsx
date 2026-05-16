@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { ArrowDown, ArrowUp, GripVertical, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 type ExistingImage = {
@@ -11,16 +12,23 @@ type ExistingImage = {
   alt: string;
 };
 
-export function ImageUploadPanel({
-  resortId,
-  existingImages
-}: {
+type ImageUploadPanelProps = {
   resortId: string;
   existingImages: ExistingImage[];
-}) {
+  reorderAction: (formData: FormData) => Promise<{ success: true } | { success: false; error: string }>;
+};
+
+export function ImageUploadPanel({ resortId, existingImages, reorderAction }: ImageUploadPanelProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [images, setImages] = useState(existingImages);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isReordering, setIsReordering] = useState(false);
+
+  useEffect(() => {
+    setImages(existingImages);
+  }, [existingImages]);
 
   async function onUpload(formData: FormData) {
     setMessage("");
@@ -44,10 +52,54 @@ export function ImageUploadPanel({
     });
   }
 
+  async function persistOrder(nextImages: ExistingImage[]) {
+    setIsReordering(true);
+    const formData = new FormData();
+    formData.set("resortId", resortId);
+    nextImages.forEach((image) => formData.append("imageIds", image.id));
+
+    const result = await reorderAction(formData);
+    setIsReordering(false);
+
+    if (!result.success) {
+      setImages(existingImages);
+      toast.error(result.error);
+      return;
+    }
+
+    toast.success("Порядок фото сохранен");
+    startTransition(() => {
+      router.refresh();
+    });
+  }
+
+  function moveImage(fromIndex: number, toIndex: number) {
+    if (toIndex < 0 || toIndex >= images.length || fromIndex === toIndex) return;
+    const nextImages = [...images];
+    const [moved] = nextImages.splice(fromIndex, 1);
+    nextImages.splice(toIndex, 0, moved);
+    setImages(nextImages);
+    void persistOrder(nextImages);
+  }
+
+  function onDrop(targetIndex: number) {
+    if (draggedIndex === null) return;
+    moveImage(draggedIndex, targetIndex);
+    setDraggedIndex(null);
+  }
+
   return (
     <div className="rounded-[2rem] bg-white p-6 shadow-[0_18px_70px_rgba(14,26,31,0.08)]">
-      <p className="text-xs uppercase tracking-[0.2em] text-black/45">Загрузка фото</p>
-      <p className="mt-3 text-sm leading-6 text-black/65">PNG, JPG или WebP.</p>
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#f7f1e6] text-pine">
+          <ImageIcon size={18} />
+        </span>
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-black/45">Фото</p>
+          <p className="mt-2 text-sm leading-6 text-black/65">Перетащите фото или используйте стрелки. Первое фото станет обложкой.</p>
+        </div>
+      </div>
+
       <form action={onUpload} className="mt-5 space-y-4">
         <input type="hidden" name="resortId" value={resortId} />
         <input
@@ -62,11 +114,47 @@ export function ImageUploadPanel({
         </button>
       </form>
       {message && <p className="mt-3 text-sm text-pine">{message}</p>}
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        {existingImages.map((image) => (
-          <div key={image.id} className="overflow-hidden rounded-[1.25rem]">
-            <div className="relative h-28">
+
+      <div className="mt-6 grid gap-3">
+        {images.map((image, index) => (
+          <div
+            key={image.id}
+            draggable
+            onDragStart={() => setDraggedIndex(index)}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={() => onDrop(index)}
+            onDragEnd={() => setDraggedIndex(null)}
+            className={`grid grid-cols-[74px_minmax(0,1fr)_auto] items-center gap-3 rounded-[1.25rem] border bg-white p-2 transition ${draggedIndex === index ? "border-pine/40 opacity-60" : "border-black/8"}`}
+          >
+            <div className="relative h-16 overflow-hidden rounded-[1rem] bg-black">
               <Image src={image.url} alt={image.alt} fill className="object-cover" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-sm font-medium text-ink">
+                <GripVertical size={16} className="text-black/35" />
+                {index === 0 ? "Обложка" : `Фото ${index + 1}`}
+              </div>
+              <p className="mt-1 truncate text-xs text-black/45">{image.alt || "Фото зоны отдыха"}</p>
+            </div>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                disabled={index === 0 || isReordering}
+                onClick={() => moveImage(index, index - 1)}
+                className="grid size-9 place-items-center rounded-full bg-[#f7f1e6] text-pine disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="Поднять фото"
+              >
+                <ArrowUp size={15} />
+              </button>
+              <button
+                type="button"
+                disabled={index === images.length - 1 || isReordering}
+                onClick={() => moveImage(index, index + 1)}
+                className="grid size-9 place-items-center rounded-full bg-[#f7f1e6] text-pine disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="Опустить фото"
+              >
+                <ArrowDown size={15} />
+              </button>
             </div>
           </div>
         ))}

@@ -1182,6 +1182,15 @@ export function appendResortImages(resortId: string, urls: string[]) {
   urls.forEach((url, index) => insert.run(createId("image"), resortId, url, `Фото объекта ${current + index + 1}`, current + index, "gallery", 0));
 }
 
+export function reorderResortImages(resortId: string, imageIds: string[]) {
+  const current = getResortImages(resortId);
+  const allowed = new Set(current.map((image) => image.id));
+  const orderedIds = Array.from(new Set(imageIds.map((id) => id.trim()).filter((id) => allowed.has(id))));
+  const nextIds = [...orderedIds, ...current.map((image) => image.id).filter((id) => !orderedIds.includes(id))];
+  const update = getDb().prepare("UPDATE resort_images SET sortOrder = ?, kind = ?, isCover = ? WHERE resortId = ? AND id = ?");
+  nextIds.forEach((id, index) => update.run(index, index === 0 ? "cover" : "gallery", index === 0 ? 1 : 0, resortId, id));
+}
+
 export function addModerationReview(input: { resortId: string; adminId?: string; action: string; comment?: string }) {
   getDb()
     .prepare("INSERT INTO moderation_reviews (id, resortId, adminId, action, comment, createdAt) VALUES (?, ?, ?, ?, ?, ?)")

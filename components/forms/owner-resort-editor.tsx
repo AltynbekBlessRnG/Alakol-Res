@@ -28,6 +28,7 @@ type ResortEditorProps = {
   notice?: "saved" | "submitted";
   updateAction: (formData: FormData) => void | Promise<void>;
   submitAction: (formData: FormData) => void | Promise<void>;
+  reorderImagesAction: (formData: FormData) => Promise<{ success: true } | { success: false; error: string }>;
 };
 
 type Draft = {
@@ -72,7 +73,7 @@ const TRANSFER_OPTIONS = [
   "Помогаем организовать трансфер"
 ];
 
-export function OwnerResortEditor({ resort, completeness, error, notice, updateAction, submitAction }: ResortEditorProps) {
+export function OwnerResortEditor({ resort, completeness, error, notice, updateAction, submitAction, reorderImagesAction }: ResortEditorProps) {
   const cover = resort.images.find((image) => image.isCover || image.kind === "cover") ?? resort.images[0];
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -340,7 +341,7 @@ export function OwnerResortEditor({ resort, completeness, error, notice, updateA
             )}
           </div>
 
-          <ImageUploadPanel resortId={resort.id} existingImages={resort.images} />
+          <ImageUploadPanel resortId={resort.id} existingImages={resort.images} reorderAction={reorderImagesAction} />
         </aside>
       </section>
 

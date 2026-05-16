@@ -30,6 +30,7 @@ import {
   listOwnerLeadsFromSupabase,
   markPasswordResetTokenUsedInSupabase,
   moderateReviewInSupabase,
+  reorderResortImagesInSupabase,
   replaceResortAmenitiesInSupabase,
   replaceResortImagesInSupabase,
   replaceResortPricesInSupabase,
@@ -299,6 +300,28 @@ export async function createDraftResortAction(_formData?: FormData) {
 export async function appendUploadedImagesAction(resortId: string, urls: string[]) {
   await appendResortImagesInSupabase(resortId, urls);
   revalidatePath(`/owner/resorts/${resortId}`);
+}
+
+export async function reorderResortImagesAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const session = await requireRole("OWNER");
+    const resortId = String(formData.get("resortId") || "");
+    const imageIds = formData.getAll("imageIds").map((id) => String(id)).filter(Boolean);
+    const resort = await getResortByIdFromSupabase(resortId);
+
+    if (!resort || resort.ownerProfileId !== session.user.ownerProfileId) {
+      return { success: false, error: "Нет доступа к объекту" };
+    }
+
+    await reorderResortImagesInSupabase(resortId, imageIds);
+    revalidatePath("/owner");
+    revalidatePath(`/owner/resorts/${resortId}`);
+    revalidatePath("/catalog");
+    return { success: true };
+  } catch (error) {
+    console.error("reorderResortImagesAction error:", error);
+    return { success: false, error: "Не удалось сохранить порядок фото" };
+  }
 }
 
 export async function updateLeadAction(formData: FormData) {

@@ -1,4 +1,4 @@
-import { submitResortForReviewAction, updateResortAction } from "@/lib/actions";
+import { reorderResortImagesAction, submitResortForReviewAction, updateResortAction } from "@/lib/actions";
 import { getResortCompleteness } from "@/lib/supabase/data";
 import type { Resort, ResortAmenity, ResortImage, ResortPrice } from "@/lib/types";
 import { OwnerResortEditor } from "@/components/forms/owner-resort-editor";
@@ -18,6 +18,7 @@ export function OwnerResortForm({ resort, error, notice }: OwnerResortFormProps)
       notice={notice}
       updateAction={updateResortAction}
       submitAction={submitResortForReviewAction}
+      reorderImagesAction={reorderResortImagesAction}
     />
   );
 }

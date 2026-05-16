@@ -705,6 +705,35 @@ export async function appendResortImagesInSupabase(resortId: string, urls: strin
   );
 }
 
+export async function reorderResortImagesInSupabase(resortId: string, imageIds: string[]) {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return fallback.reorderResortImages(resortId, imageIds);
+  const orderedIds = Array.from(new Set(imageIds.map((id) => id.trim()).filter(Boolean)));
+  if (!orderedIds.length) return;
+
+  const { data: current } = await supabase
+    .from("resort_images")
+    .select("id")
+    .eq("resort_id", resortId)
+    .order("sort_order", { ascending: true });
+  const currentIds = ((current as Array<{ id: string }> | null) ?? []).map((image) => image.id);
+  const allowed = new Set(currentIds);
+  const nextIds = [
+    ...orderedIds.filter((id) => allowed.has(id)),
+    ...currentIds.filter((id) => !orderedIds.includes(id))
+  ];
+
+  await Promise.all(
+    nextIds.map((id, index) =>
+      supabase
+        .from("resort_images")
+        .update({ sort_order: index, kind: index === 0 ? "cover" : "gallery" })
+        .eq("resort_id", resortId)
+        .eq("id", id)
+    )
+  );
+}
+
 export async function replaceResortImagesInSupabase(resortId: string, images: Array<{ url: string; kind: string }>) {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return fallback.replaceResortImages(resortId, images);
